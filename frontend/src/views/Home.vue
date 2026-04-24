@@ -156,12 +156,12 @@ export default {
 
   methods: {
     ...mapMutations(["setAuthUser", "setNewDialogOptions"]),
-    ...mapActions(["getEvents", "createNew"]),
+    ...mapActions(["getEvents", "openNewDialog"]),
     userRespondedToEvent(event) {
       return event.hasResponded ?? false
     },
     _createNew() {
-      this.createNew({ eventOnly: false })
+      this.openNewDialog({ eventOnly: false })
     },
     createFolder() {},
     convertW2M() {

@@ -1,16 +1,111 @@
 import Vue from "vue"
 import Vuex from "vuex"
-import { numFreeEvents, upgradeDialogTypes } from "@/constants"
-import { get, isPremiumUser } from "@/utils"
+import { get as apiGet } from "@/utils"
 import {
-  createFolder,
-  deleteFolder,
-  setEventFolder,
-  updateFolder,
+  createFolder as createFolderService,
+  deleteFolder as deleteFolderService,
+  setEventFolder as setEventFolderService,
+  updateFolder as updateFolderService,
 } from "../utils/services/FolderService"
-import { archiveEvent } from "../utils/services/EventService"
+import { archiveEvent as archiveEventService } from "../utils/services/EventService"
 
 Vue.use(Vuex)
+
+const showErrorAction = ({ commit }, error) => {
+  commit("setError", "")
+  setTimeout(() => commit("setError", error), 0)
+}
+
+const showInfoAction = ({ commit }, info) => {
+  commit("setInfo", "")
+  setTimeout(() => commit("setInfo", info), 0)
+}
+
+const refreshAuthUserAction = async ({ commit }) => {
+  const authUser = await apiGet("/user/profile")
+  commit("setAuthUser", authUser)
+}
+
+const openNewDialogAction = ({ commit }, { eventOnly = false, folderId = null }) => {
+  commit("setNewDialogOptions", {
+    show: true,
+    contactsPayload: {},
+    openNewGroup: false,
+    eventOnly,
+    folderId,
+  })
+}
+
+const getEventsAction = async ({ commit, dispatch, state }) => {
+  if (!state.authUser) return null
+  try {
+    commit("setFolders", await apiGet("/user/folders"))
+    commit("setEvents", await apiGet("/user/events"))
+  } catch (err) {
+    dispatch("showError", "There was a problem fetching events!")
+    console.error(err)
+  }
+  return null
+}
+
+const archiveEventAction = async ({ dispatch, state }, { eventId, archive }) => {
+  try {
+    await archiveEventService(eventId, archive)
+    const event = state.events.find((e) => e._id === eventId)
+    if (event) {
+      event.isArchived = archive
+    }
+  } catch (err) {
+    dispatch("showError", "There was a problem archiving the event!")
+    console.error(err)
+  }
+}
+
+const createFolderAction = async ({ commit, dispatch }, { name, color }) => {
+  try {
+    const folder = await createFolderService(name, color)
+    commit("addFolder", {
+      _id: folder.id,
+      name,
+      color,
+      eventIds: [],
+    })
+  } catch (err) {
+    dispatch("showError", "There was a problem creating the folder!")
+    console.error(err)
+  }
+}
+
+const updateFolderAction = async ({ commit, dispatch }, { folderId, name, color }) => {
+  try {
+    await updateFolderService(folderId, name, color)
+    commit("updateFolder", { folderId, name, color })
+  } catch (err) {
+    dispatch("showError", "There was a problem updating the folder!")
+    console.error(err)
+  }
+}
+
+const deleteFolderAction = async ({ commit, dispatch }, folderId) => {
+  try {
+    await deleteFolderService(folderId)
+    commit("removeFolder", folderId)
+  } catch (err) {
+    dispatch("showError", "There was a problem deleting the folder!")
+    console.error(err)
+  }
+}
+
+const setEventFolderAction = async ({ commit, dispatch }, { eventId, folderId }) => {
+  try {
+    commit("removeEventFromFolder", eventId)
+    commit("addEventToFolder", { eventId, folderId })
+    await setEventFolderService(eventId, folderId)
+  } catch (err) {
+    dispatch("showError", "There was a problem moving the event!")
+    console.error(err)
+  }
+}
 
 export default new Vuex.Store({
   state: {
@@ -29,15 +124,9 @@ export default new Vuex.Store({
     signUpFormEnabled: false,
     daysOnlyEnabled: true,
     overlayAvailabilitiesEnabled: true,
-    enablePaywall: true,
 
     // Experiments
     pricingPageConversion: "control",
-
-    // Upgrade dialog
-    upgradeDialogVisible: false,
-    upgradeDialogType: null,
-    upgradeDialogData: null,
 
     // New dialog
     newDialogOptions: {
@@ -46,11 +135,6 @@ export default new Vuex.Store({
       openNewGroup: false,
       eventOnly: false,
       folderId: null,
-    },
-  },
-  getters: {
-    isPremiumUser(state) {
-      return isPremiumUser(state.authUser)
     },
   },
   mutations: {
@@ -90,19 +174,6 @@ export default new Vuex.Store({
     setPricingPageConversion(state, conversion) {
       state.pricingPageConversion = conversion
     },
-    setEnablePaywall(state, enabled) {
-      state.enablePaywall = enabled
-    },
-    setUpgradeDialogVisible(state, visible) {
-      state.upgradeDialogVisible = visible
-    },
-    setUpgradeDialogType(state, type) {
-      state.upgradeDialogType = type
-    },
-    setUpgradeDialogData(state, data) {
-      state.upgradeDialogData = data
-    },
-
     addFolder(state, folder) {
       state.folders.push(folder)
     },
@@ -148,137 +219,16 @@ export default new Vuex.Store({
     },
   },
   actions: {
-    // Error & info
-    showError({ commit }, error) {
-      commit("setError", "")
-      setTimeout(() => commit("setError", error), 0)
-    },
-    showInfo({ commit }, info) {
-      commit("setInfo", "")
-      setTimeout(() => commit("setInfo", info), 0)
-    },
-
-    async refreshAuthUser({ commit }) {
-      const authUser = await get("/user/profile")
-      commit("setAuthUser", authUser)
-    },
-
-    createNew(
-      { state, getters, commit, dispatch },
-      { eventOnly = false, folderId = null }
-    ) {
-      if (
-        state.enablePaywall &&
-        !getters.isPremiumUser &&
-        state.authUser?.numEventsCreated >= numFreeEvents
-      ) {
-        dispatch("showUpgradeDialog", {
-          type: upgradeDialogTypes.CREATE_EVENT,
-        })
-        return
-      }
-
-      commit("setNewDialogOptions", {
-        show: true,
-        contactsPayload: {},
-        openNewGroup: false,
-        eventOnly: eventOnly,
-        folderId: folderId,
-      })
-    },
-
-    // Events
-    getEvents({ commit, dispatch, state }) {
-      if (state.authUser) {
-        return Promise.allSettled([get("/user/folders"), get("/user/events")])
-          .then(([folders, events]) => {
-            if (
-              folders.status === "fulfilled" &&
-              events.status === "fulfilled"
-            ) {
-              commit("setFolders", folders.value)
-              commit("setEvents", events.value)
-            } else {
-              dispatch("showError", "There was a problem fetching events!")
-              console.error(folders.reason, events.reason)
-            }
-          })
-          .catch((err) => {
-            dispatch("showError", "There was a problem fetching events!")
-            console.error(err)
-          })
-      } else {
-        return null
-      }
-    },
-    async archiveEvent({ dispatch, state }, { eventId, archive }) {
-      try {
-        await archiveEvent(eventId, archive)
-        const event = state.events.find((e) => e._id === eventId)
-        if (event) {
-          event.isArchived = archive
-        }
-      } catch (err) {
-        dispatch("showError", "There was a problem archiving the event!")
-        console.error(err)
-      }
-    },
-    async createFolder({ commit, dispatch }, { name, color }) {
-      try {
-        const folder = await createFolder(name, color)
-        commit("addFolder", {
-          _id: folder.id,
-          name,
-          color,
-          eventIds: [],
-        })
-      } catch (err) {
-        dispatch("showError", "There was a problem creating the folder!")
-        console.error(err)
-      }
-    },
-    async updateFolder({ commit, dispatch }, { folderId, name, color }) {
-      try {
-        await updateFolder(folderId, name, color)
-        commit("updateFolder", { folderId, name, color })
-      } catch (err) {
-        dispatch("showError", "There was a problem updating the folder!")
-        console.error(err)
-      }
-    },
-    async deleteFolder({ commit, dispatch }, folderId) {
-      try {
-        await deleteFolder(folderId)
-        commit("removeFolder", folderId)
-      } catch (err) {
-        dispatch("showError", "There was a problem deleting the folder!")
-        console.error(err)
-      }
-    },
-    async setEventFolder({ commit, dispatch }, { eventId, folderId }) {
-      try {
-        commit("removeEventFromFolder", eventId)
-        commit("addEventToFolder", { eventId, folderId })
-        await setEventFolder(eventId, folderId)
-      } catch (err) {
-        dispatch("showError", "There was a problem moving the event!")
-        console.error(err)
-      }
-    },
-    async refreshAuthUser({ commit }) {
-      const authUser = await get("/user/profile")
-      commit("setAuthUser", authUser)
-    },
-    showUpgradeDialog({ commit }, { type, data = null }) {
-      commit("setUpgradeDialogVisible", true)
-      commit("setUpgradeDialogType", type)
-      commit("setUpgradeDialogData", data)
-    },
-    hideUpgradeDialog({ commit }) {
-      commit("setUpgradeDialogVisible", false)
-      commit("setUpgradeDialogType", null)
-      commit("setUpgradeDialogData", null)
-    },
+    showError: showErrorAction,
+    showInfo: showInfoAction,
+    refreshAuthUser: refreshAuthUserAction,
+    openNewDialog: openNewDialogAction,
+    getEvents: getEventsAction,
+    archiveEvent: archiveEventAction,
+    createFolder: createFolderAction,
+    updateFolder: updateFolderAction,
+    deleteFolder: deleteFolderAction,
+    setEventFolder: setEventFolderAction,
   },
   modules: {},
 })

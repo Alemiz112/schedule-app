@@ -1,24 +1,12 @@
 <template>
   <div>
     <h1>Test</h1>
-    <UpgradeDialog :value="true" />
+    <p>Test page.</p>
   </div>
 </template>
 
 <script>
-import UpgradeDialog from "@/components/pricing/UpgradeDialog"
-
 export default {
   name: "Test",
-  components: {
-    UpgradeDialog,
-  },
-  methods: {
-    createCheckoutSession() {
-      post("/stripe/create-checkout-session").then((res) => {
-        console.log(res)
-      })
-    },
-  },
 }
 </script>

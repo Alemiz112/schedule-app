@@ -1,11 +1,6 @@
 package routes
 
-import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	"schej.it/server/db"
-)
+import "github.com/gin-gonic/gin"
 
 func InitUsers(router *gin.RouterGroup) {
 	usersRouter := router.Group("/users")
@@ -20,21 +15,6 @@ func InitUsers(router *gin.RouterGroup) {
 // @Success 200 {object} object{isPremium=bool}
 // @Router /users/{userId}/is-premium [get]
 func getIsUserPremium(c *gin.Context) {
-	userId := c.Param("userId")
-	user := db.GetUserById(userId)
-	if user == nil {
-		c.JSON(http.StatusOK, gin.H{"isPremium": false})
-		return
-	}
-
-	isPremium := false
-	if user.StripeCustomerId != nil {
-		if user.IsPremium != nil {
-			isPremium = *user.IsPremium
-		} else {
-			isPremium = true
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"isPremium": isPremium})
+	_ = c.Param("userId")
+	c.JSON(200, gin.H{"isPremium": true})
 }

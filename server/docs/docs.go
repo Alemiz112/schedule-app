@@ -25,46 +25,6 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/analytics/downgrade-user": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Downgrades the specified user to Schej Free",
-                "parameters": [
-                    {
-                        "description": "Object containing the user email",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "type": "object"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "email": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {}
-                }
-            }
-        },
         "/analytics/monthly-active-event-creators": {
             "get": {
                 "consumes": [
@@ -333,46 +293,6 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "userId": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {}
-                }
-            }
-        },
-        "/analytics/upgrade-user": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Upgrades the specified user to Schej Premium",
-                "parameters": [
-                    {
-                        "description": "Object containing the user email",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "type": "object"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "email": {
                                             "type": "string"
                                         }
                                     }
@@ -2561,9 +2481,6 @@ var doc = `{
                     "description": "Whether the user has set a custom name for themselves, i.e. don't change their name when they sign in",
                     "type": "boolean"
                 },
-                "isPremium": {
-                    "type": "boolean"
-                },
                 "lastName": {
                     "type": "string"
                 },
@@ -2575,10 +2492,6 @@ var doc = `{
                 },
                 "primaryAccountKey": {
                     "description": "The calendarAccountKey of the account the user first signed in with",
-                    "type": "string"
-                },
-                "stripeCustomerId": {
-                    "description": "Stripe customer ID",
                     "type": "string"
                 },
                 "timezoneOffset": {

@@ -31,9 +31,6 @@ type User struct {
 	// Calendar options
 	CalendarOptions *CalendarOptions `json:"calendarOptions" bson:"calendarOptions,omitempty"`
 
-	// Stripe customer ID
-	StripeCustomerId *string `json:"stripeCustomerId" bson:"stripeCustomerId,omitempty"`
-	IsPremium        *bool   `json:"isPremium" bson:"isPremium,omitempty"`
 	NumEventsCreated int     `json:"numEventsCreated" bson:"numEventsCreated,omitempty"`
 }
 
@@ -41,15 +38,8 @@ type User struct {
 type TokenOriginType string
 
 const (
-	Undefined TokenOriginType = ""
-	IOS       TokenOriginType = "ios"
-	ANDROID   TokenOriginType = "android"
-	WEB       TokenOriginType = "web"
+	IOS TokenOriginType = "ios"
+	ANDROID TokenOriginType = "android"
+	WEB TokenOriginType = "web"
 )
 
-type UserStatus string
-
-const (
-	FREE UserStatus = "free"
-	BUSY UserStatus = "busy"
-)

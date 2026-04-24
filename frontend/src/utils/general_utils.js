@@ -213,18 +213,8 @@ export const lightOrDark = (color) => {
   }
 }
 
-/** Returns whether the given user is a premium user */
-export const isPremiumUser = (authUser) => {
-  if (!authUser) return false
-
-  if (authUser.stripeCustomerId) {
-    if (authUser.isPremium !== null) {
-      return authUser.isPremium
-    }
-    return true
-  }
-  return false
-}
+/** Premium is now enabled for everyone by default. */
+export const isPremiumUser = () => true
 
 /** Adds an event ID to the 'eventsCreated' list in localStorage */
 export const addEventToCreatedList = (eventId) => {

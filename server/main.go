@@ -19,7 +19,6 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/stripe/stripe-go/v82"
 	"schej.it/server/db"
 	"schej.it/server/logger"
 	"schej.it/server/routes"
@@ -40,14 +39,14 @@ import (
 // @host localhost:3002/api
 
 func init() {
-	mime.AddExtensionType(".css", "text/css")
-	mime.AddExtensionType(".js", "application/javascript")
-	mime.AddExtensionType(".svg", "image/svg+xml")
-	mime.AddExtensionType(".woff", "font/woff")
-	mime.AddExtensionType(".woff2", "font/woff2")
-	mime.AddExtensionType(".ttf", "font/ttf")
-	mime.AddExtensionType(".json", "application/json")
-	mime.AddExtensionType(".map", "application/json")
+	_ = mime.AddExtensionType(".css", "text/css")
+	_ = mime.AddExtensionType(".js", "application/javascript")
+	_ = mime.AddExtensionType(".svg", "image/svg+xml")
+	_ = mime.AddExtensionType(".woff", "font/woff")
+	_ = mime.AddExtensionType(".woff2", "font/woff2")
+	_ = mime.AddExtensionType(".ttf", "font/ttf")
+	_ = mime.AddExtensionType(".json", "application/json")
+	_ = mime.AddExtensionType(".map", "application/json")
 }
 
 func main() {
@@ -55,10 +54,10 @@ func main() {
 	release := flag.Bool("release", false, "Whether this is the release version of the server")
 	flag.Parse()
 	if *release {
-		os.Setenv("GIN_MODE", "release")
+		_ = os.Setenv("GIN_MODE", "release")
 		gin.SetMode(gin.ReleaseMode)
 	} else {
-		os.Setenv("GIN_MODE", "debug")
+		_ = os.Setenv("GIN_MODE", "debug")
 	}
 
 	// Init logfile
@@ -66,6 +65,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func() {
+		_ = logFile.Close()
+	}()
 	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
 
 	// Init logger
@@ -132,7 +134,6 @@ func main() {
 	routes.InitUsers(apiRouter)
 	routes.InitEvents(apiRouter)
 	routes.InitAnalytics(apiRouter)
-	routes.InitStripe(apiRouter)
 	routes.InitFolders(apiRouter)
 	slackbot.InitSlackbot(apiRouter)
 
@@ -175,9 +176,13 @@ func main() {
 
 	// Run server
 	if os.Getenv("NODE_ENV") == "staging" {
-		router.Run(":3003")
+		if err := router.Run(":3003"); err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		router.Run(":3002")
+		if err := router.Run(":3002"); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -188,10 +193,6 @@ func loadDotEnv() {
 		// .env file is optional - env vars can be passed directly (e.g., via Docker)
 		logger.StdOut.Println("No .env file found, using environment variables")
 	}
-
-	// Load stripe key
-	stripe.Key = os.Getenv("STRIPE_API_KEY")
-
 	// Validate session secret
 	validateSessionSecret()
 }
@@ -216,7 +217,7 @@ func noRouteHandler() gin.HandlerFunc {
 		path := c.Request.URL.Path
 
 		// Determine meta tags based off URL
-		if match := regexp.MustCompile(`\/e\/(\w+)`).FindStringSubmatchIndex(path); match != nil {
+		if match := regexp.MustCompile(`/e/(\w+)`).FindStringSubmatchIndex(path); match != nil {
 			// /e/:eventId
 			eventId := path[match[2]:match[3]]
 			event := db.GetEventByEitherId(eventId)
@@ -232,7 +233,7 @@ func noRouteHandler() gin.HandlerFunc {
 					params["ogImage"] = "/img/when2meetOgImage2.png"
 				}
 			}
-		} else if regexp.MustCompile(`\/g\/`).MatchString(path) {
+		} else if regexp.MustCompile(`/g/`).MatchString(path) {
 			// /g/ routes
 			// params["enableStickyFooter"] = true
 		}
@@ -241,10 +242,3 @@ func noRouteHandler() gin.HandlerFunc {
 	}
 }
 
-func splitPath(path string) []string {
-	dir, last := filepath.Split(path)
-	if dir == "" {
-		return []string{last}
-	}
-	return append(splitPath(filepath.Clean(dir)), last)
-}

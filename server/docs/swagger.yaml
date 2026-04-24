@@ -327,8 +327,6 @@ definitions:
         description: Whether the user has set a custom name for themselves, i.e. don't
           change their name when they sign in
         type: boolean
-      isPremium:
-        type: boolean
       lastName:
         type: string
       numEventsCreated:
@@ -338,9 +336,6 @@ definitions:
       primaryAccountKey:
         description: The calendarAccountKey of the account the user first signed in
           with
-        type: string
-      stripeCustomerId:
-        description: Stripe customer ID
         type: string
       timezoneOffset:
         type: integer
@@ -374,29 +369,6 @@ info:
   title: Schej.it API
   version: "1.0"
 paths:
-  /analytics/downgrade-user:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Object containing the user email
-        in: body
-        name: payload
-        required: true
-        schema:
-          allOf:
-          - type: object
-          - properties:
-              email:
-                type: string
-            type: object
-      produces:
-      - application/json
-      responses:
-        "200": {}
-      summary: Downgrades the specified user to Schej Free
-      tags:
-      - analytics
   /analytics/monthly-active-event-creators:
     get:
       consumes:
@@ -561,29 +533,6 @@ paths:
       responses:
         "200": {}
       summary: Notifies us when user has viewed the upgrade dialog
-      tags:
-      - analytics
-  /analytics/upgrade-user:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Object containing the user email
-        in: body
-        name: payload
-        required: true
-        schema:
-          allOf:
-          - type: object
-          - properties:
-              email:
-                type: string
-            type: object
-      produces:
-      - application/json
-      responses:
-        "200": {}
-      summary: Upgrades the specified user to Schej Premium
       tags:
       - analytics
   /analytics/user/{email}:
