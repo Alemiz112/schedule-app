@@ -203,7 +203,7 @@
                   </v-btn>
                 </div>
                 <div
-                  v-if="!isPhone && (!isSignUp || canEdit)"
+                  v-if="!isPhone && (!isSignUp || canEdit) && (!isAppointment || canEdit)"
                   class="tw-flex tw-w-40"
                 >
                   <template v-if="!isEditing">
@@ -259,9 +259,21 @@
             />
           </div>
 
-          <!-- Calendar -->
+          <!-- Appointment panels -->
+          <!-- Guest: booking panel instead of the grid -->
+          <div v-if="isAppointment && !canEdit" class="tw-mx-4 tw-mt-4">
+            <AppointmentBookingPanel :event="event" />
+          </div>
+          <!-- Owner: requests panel below the normal schedule overlap -->
+          <div v-if="isAppointment && canEdit" class="tw-mx-4 tw-mt-8">
+            <div class="tw-mb-4 tw-border-t tw-border-solid tw-border-light-gray tw-pt-6"></div>
+            <AppointmentRequestsPanel :event="event" />
+          </div>
+
+          <!-- Calendar (hidden for appointment events) -->
 
           <ScheduleOverlap
+            v-if="!isAppointment || canEdit"
             ref="scheduleOverlap"
             :event="event"
             :fromEditEvent="fromEditEvent"
@@ -333,7 +345,7 @@
       <div :class="isPhone ? 'tw-h-8' : 'tw-h-8'"></div>
       <!-- Bottom bar for phones -->
       <div
-        v-if="!isSettingSpecificTimes && isPhone && (!isSignUp || canEdit)"
+        v-if="!isSettingSpecificTimes && isPhone && (!isSignUp || canEdit) && (!isAppointment || canEdit)"
         class="tw-fixed tw-bottom-0 tw-z-20 tw-flex tw-w-full tw-flex-col"
         :style="{ bottom: '0' }"
       >
@@ -459,6 +471,8 @@ import InvitationDialog from "@/components/groups/InvitationDialog.vue"
 import HelpDialog from "@/components/HelpDialog.vue"
 import EventDescription from "@/components/event/EventDescription.vue"
 import FormerlyKnownAs from "@/components/FormerlyKnownAs.vue"
+import AppointmentBookingPanel from "@/components/appointments/AppointmentBookingPanel.vue"
+import AppointmentRequestsPanel from "@/components/appointments/AppointmentRequestsPanel.vue"
 export default {
   name: "Event",
 
@@ -482,6 +496,8 @@ export default {
     HelpDialog,
     EventDescription,
     FormerlyKnownAs,
+    AppointmentBookingPanel,
+    AppointmentRequestsPanel,
   },
 
   data: () => ({
@@ -516,6 +532,7 @@ export default {
 
     // Sign Up Forms
     currSignUpBlock: null,
+
   }),
 
   beforeMount() {},
@@ -565,6 +582,9 @@ export default {
     },
     isSignUp() {
       return this.event?.isSignUpForm
+    },
+    isAppointment() {
+      return !!this.event?.isAppointment
     },
     eventType() {
       if (this.isGroup) return "group"

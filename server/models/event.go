@@ -99,6 +99,9 @@ type Event struct {
 
 	// Whether the user has responded to the availability group (fetched based on whether user is in Attendees)
 	HasResponded *bool `json:"hasResponded" bson:"-"`
+
+	// Whether this event is an appointment (guests pick a single time slot, owner must approve)
+	IsAppointment *bool `json:"isAppointment" bson:"isAppointment,omitempty"`
 }
 
 func (e *Event) GetId() string {

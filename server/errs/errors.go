@@ -20,7 +20,9 @@ const (
 	InvalidCredentials    string = "invalid-credentials"
 	OtpExpired            string = "otp-expired"
 	OtpInvalidCode        string = "otp-invalid-code"
-	OtpTooManyAttempts    string = "otp-too-many-attempts"
+	OtpTooManyAttempts             string = "otp-too-many-attempts"
+	EventNotAppointment            string = "event-not-appointment"
+	AppointmentRequestNotFound     string = "appointment-request-not-found"
 )
 
 type GoogleAPIError struct {

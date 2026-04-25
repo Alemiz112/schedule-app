@@ -46,6 +46,13 @@ func InitEvents(router *gin.RouterGroup) {
 	eventRouter.DELETE("/:eventId", middleware.AuthRequired(), deleteEvent)
 	eventRouter.POST("/:eventId/duplicate", middleware.AuthRequired(), duplicateEvent)
 	eventRouter.POST("/:eventId/archive", middleware.AuthRequired(), archiveEvent)
+
+	// Appointment routes
+	eventRouter.POST("/:eventId/appointment-requests", createAppointmentRequest)
+	eventRouter.GET("/:eventId/appointment-requests/booked", getBookedAppointmentSlots)
+	eventRouter.GET("/:eventId/appointment-requests", middleware.AuthRequired(), getAppointmentRequests)
+	eventRouter.POST("/:eventId/appointment-requests/:requestId/approve", middleware.AuthRequired(), approveAppointmentRequest)
+	eventRouter.POST("/:eventId/appointment-requests/:requestId/reject", middleware.AuthRequired(), rejectAppointmentRequest)
 }
 
 // @Summary Creates a new event
@@ -87,6 +94,9 @@ func createEvent(c *gin.Context) {
 
 		// Only for availability groups
 		Attendees []string `json:"attendees"`
+
+		// Whether this event is an appointment
+		IsAppointment *bool `json:"isAppointment"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		fmt.Println(err)
@@ -133,6 +143,7 @@ func createEvent(c *gin.Context) {
 		CollectEmails:            payload.CollectEmails,
 		TimeIncrement:            payload.TimeIncrement,
 		Type:                     payload.Type,
+		IsAppointment:            payload.IsAppointment,
 		SignUpResponses:          make(map[string]*models.SignUpResponse),
 		NumResponses:             &numResponses,
 	}
@@ -275,6 +286,9 @@ func editEvent(c *gin.Context) {
 
 		// Only for availability groups
 		Attendees []string `json:"attendees"`
+
+		// Whether this event is an appointment
+		IsAppointment *bool `json:"isAppointment"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		logger.StdErr.Println(err)
@@ -322,6 +336,7 @@ func editEvent(c *gin.Context) {
 	event.SendEmailAfterXResponses = payload.SendEmailAfterXResponses
 	event.CollectEmails = payload.CollectEmails
 	event.Type = payload.Type
+	event.IsAppointment = payload.IsAppointment
 
 	// Update remindees
 	if event.Type == models.DOW || event.Type == models.SPECIFIC_DATES {

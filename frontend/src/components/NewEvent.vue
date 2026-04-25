@@ -199,6 +199,32 @@
         </div>
 
         <v-checkbox
+          v-if="authUser && !guestEvent && !daysOnly"
+          v-model="isAppointment"
+          messages="Guests pick a single time slot — you approve each booking"
+          class="tw-mt-2"
+        >
+          <template v-slot:label>
+            <span
+              class="tw-text-sm"
+              :class="isAppointment ? 'tw-text-black' : 'tw-text-very-dark-gray'"
+            >
+              Appointment event
+            </span>
+          </template>
+          <template v-slot:message="{ message }">
+            <v-expand-transition>
+              <div
+                v-if="isAppointment"
+                class="-tw-mt-1 tw-ml-[32px] tw-text-xs tw-text-dark-gray"
+              >
+                {{ message }}
+              </div>
+            </v-expand-transition>
+          </template>
+        </v-checkbox>
+
+        <v-checkbox
           v-if="!guestEvent && authUser"
           v-model="notificationsEnabled"
           hide-details
@@ -285,7 +311,7 @@
           >
             <div class="tw-flex tw-flex-col tw-gap-5 tw-pt-2">
               <div v-if="!edit" class="tw-flex tw-items-center tw-gap-x-2">
-                <div class="tw-text-sm tw-text-black">Time increment:</div>
+                <div class="tw-text-sm tw-text-black">{{ isAppointment ? 'Slot duration:' : 'Time increment:' }}</div>
                 <v-select
                   v-model="timeIncrement"
                   dense
@@ -523,6 +549,8 @@ export default {
     startOnMonday: prefersStartOnMonday(),
     notificationsEnabled: true,
 
+    isAppointment: false,
+
     daysOnly: false,
     daysOnlyOptions: Object.freeze([
       { text: "Dates and times", value: false },
@@ -642,6 +670,7 @@ export default {
       this.selectedDays = []
       this.selectedDaysOfWeek = []
       this.notificationsEnabled = true
+      this.isAppointment = false
       this.daysOnly = false
       this.selectedDateOption = "Specific dates"
       this.emails = []
@@ -720,6 +749,7 @@ export default {
         name: this.name,
         duration: duration,
         dates: dates,
+        isAppointment: this.isAppointment,
         hasSpecificTimes: this.specificTimesEnabled,
         notificationsEnabled: !this.authUser
           ? false
@@ -875,6 +905,7 @@ export default {
         this.notificationsEnabled = this.event.notificationsEnabled
         this.blindAvailabilityEnabled = this.event.blindAvailabilityEnabled
         this.daysOnly = this.event.daysOnly
+        this.isAppointment = this.event.isAppointment ?? false
         this.specificTimesEnabled = this.event.hasSpecificTimes
         this.startOnMonday = this.event.startOnMonday
         this.collectEmails = this.event.collectEmails
