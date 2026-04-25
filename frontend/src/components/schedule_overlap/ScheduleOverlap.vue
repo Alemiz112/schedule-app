@@ -747,6 +747,7 @@
                               :timezone="curTimezone"
                               :syncWithBackend="!isGroup"
                             />
+
                           </v-card-text>
                         </v-card>
                       </v-dialog>
@@ -1144,6 +1145,9 @@ export default {
       overlayAvailability: false, // Whether to overlay everyone's availability when editing
       bufferTime: calendarOptionsDefaults.bufferTime, // Set in mounted()
       workingHours: calendarOptionsDefaults.workingHours, // Set in mounted()
+      addToCalendar: calendarOptionsDefaults.addToCalendar, // Set in mounted()
+      defaultCalendarKey: calendarOptionsDefaults.defaultCalendarKey, // Set in mounted()
+      defaultCalendarId: calendarOptionsDefaults.defaultCalendarId, // Set in mounted()
 
       /* Event Options */
       showEventOptions:
@@ -3537,8 +3541,8 @@ export default {
       this.state = this.defaultState
     },
 
-    /** Redirect user to Google Calendar to finish the creation of the event */
-    confirmScheduleEvent(googleCalendar = true) {
+    /** Create event in user's default calendar or open external calendar link */
+    async confirmScheduleEvent(googleCalendar = true) {
       if (!this.curScheduledEvent) return
       this.$posthog.capture("schedule_event_confirmed")
       // Get start date, and end date from the area that the user has dragged out
@@ -3566,19 +3570,30 @@ export default {
         endDate = dateToDowDate(this.event.dates, endDate, offset, true)
       }
 
-      // Format email string separated by commas
-      const emails = this.respondents.map((r) => {
-        // Return email if they are not a guest, otherwise return their name
-        if (r.email.length > 0) {
-          return r.email
-        } else {
-          // return `${r.firstName} (no email)`
-          return null
-        }
-      })
-      const emailsString = encodeURIComponent(emails.filter(Boolean).join(","))
+      const attendeeEmails = this.respondents
+        .map((r) => (r.email?.length > 0 ? r.email : null))
+        .filter(Boolean)
 
       const eventId = this.event.shortId ?? this.event._id
+
+      if (this.addToCalendar && this.authUser) {
+        try {
+          await post("/user/create-calendar-event", {
+            title: this.event.name,
+            startDate: startDate.getTime(),
+            endDate: endDate.getTime(),
+            description: `This event was scheduled with Timeful: https://timeful.app/e/${eventId}`,
+            attendeeEmails,
+          })
+          this.state = this.defaultState
+          return
+        } catch {
+          // Fall through to open external calendar link
+        }
+      }
+
+      // Format email string separated by commas
+      const emailsString = encodeURIComponent(attendeeEmails.join(","))
 
       let url = ""
       if (googleCalendar) {
@@ -4540,6 +4555,15 @@ export default {
       this.workingHours =
         this.authUser?.calendarOptions?.workingHours ??
         calendarOptionsDefaults.workingHours
+      this.addToCalendar =
+        this.authUser?.calendarOptions?.addToCalendar ??
+        calendarOptionsDefaults.addToCalendar
+      this.defaultCalendarKey =
+        this.authUser?.calendarOptions?.defaultCalendarKey ??
+        calendarOptionsDefaults.defaultCalendarKey
+      this.defaultCalendarId =
+        this.authUser?.calendarOptions?.defaultCalendarId ??
+        calendarOptionsDefaults.defaultCalendarId
       if (this.isGroup) {
         if (this.event.responses[this.authUser._id]?.calendarOptions) {
           // Update calendar options if user has changed them for this specific group

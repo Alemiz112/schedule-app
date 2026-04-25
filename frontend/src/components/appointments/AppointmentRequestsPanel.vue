@@ -115,6 +115,7 @@
 
 <script>
 import { get, post } from "@/utils"
+import { mapState } from "vuex"
 import dayjs from "dayjs"
 
 export default {
@@ -139,6 +140,7 @@ export default {
   }),
 
   computed: {
+    ...mapState(["authUser"]),
     filteredRequests() {
       if (this.statusFilter === "all") return this.requests
       return this.requests.filter((r) => r.status === this.statusFilter)
@@ -177,11 +179,13 @@ export default {
     async approve(req) {
       this.loadingId = req._id + "-approve"
       try {
-        const updated = await post(
+        const response = await post(
           `/events/${this.event._id}/appointment-requests/${req._id}/approve`
         )
-        this.updateRequest(updated)
-        this.openCalendarLink(updated)
+        this.updateRequest(response)
+        if (!response.calendarEventCreated) {
+          this.openCalendarLink(response)
+        }
       } catch {
         // Keep the request as-is on error
       } finally {

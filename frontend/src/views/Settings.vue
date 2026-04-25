@@ -68,6 +68,23 @@
         <CalendarAccounts></CalendarAccounts>
       </div>
 
+      <!-- Calendar options section -->
+      <div class="tw-flex tw-flex-col tw-gap-5">
+        <div
+          class="tw-text-xl tw-font-medium tw-text-dark-green sm:tw-text-2xl"
+        >
+          Calendar options
+        </div>
+        <div class="tw-max-w-sm">
+          <AddToCalendarSwitch
+            :addToCalendar.sync="addToCalendar"
+            :defaultCalendarKey.sync="defaultCalendarKey"
+            :defaultCalendarId.sync="defaultCalendarId"
+            :calendarAccounts="authUser.calendarAccounts"
+          />
+        </div>
+      </div>
+
       <!-- Permissions Section -->
       <div class="tw-flex tw-flex-col tw-gap-5">
         <div
@@ -107,24 +124,24 @@
       </div>
 
       <!-- Question Section -->
-      <div class="tw-flex tw-flex-col tw-gap-5">
-        <div
-          class="tw-text-xl tw-font-medium tw-text-dark-green sm:tw-text-2xl"
-        >
-          Have a question?
-        </div>
-        <div class="tw-flex tw-flex-col tw-gap-5 sm:tw-flex-row sm:tw-gap-28">
-          <div class="tw-text-black">
-            Email us at
-            <a
-              href="mailto:contact@timeful.app"
-              class="tw-text-black tw-underline"
-              >contact@timeful.app</a
-            >
-            with any questions!
-          </div>
-        </div>
-      </div>
+<!--      <div class="tw-flex tw-flex-col tw-gap-5">-->
+<!--        <div-->
+<!--          class="tw-text-xl tw-font-medium tw-text-dark-green sm:tw-text-2xl"-->
+<!--        >-->
+<!--          Have a question?-->
+<!--        </div>-->
+<!--        <div class="tw-flex tw-flex-col tw-gap-5 sm:tw-flex-row sm:tw-gap-28">-->
+<!--          <div class="tw-text-black">-->
+<!--            Email us at-->
+<!--            <a-->
+<!--              href="mailto:contact@timeful.app"-->
+<!--              class="tw-text-black tw-underline"-->
+<!--              >contact@timeful.app</a-->
+<!--            >-->
+<!--            with any questions!-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
 
       <!-- Delete Account Section -->
       <div class="tw-mt-28 tw-flex tw-flex-row tw-justify-center">
@@ -173,8 +190,9 @@
 
 <script>
 import { mapState, mapActions } from "vuex"
-import { _delete, patch, isPhone } from "@/utils"
+import { _delete, get, patch, isPhone } from "@/utils"
 import CalendarAccounts from "@/components/settings/CalendarAccounts.vue"
+import AddToCalendarSwitch from "@/components/schedule_overlap/AddToCalendarSwitch.vue"
 
 export default {
   name: "Settings",
@@ -183,7 +201,7 @@ export default {
     title: "Settings - Timeful",
   },
 
-  components: { CalendarAccounts },
+  components: { CalendarAccounts, AddToCalendarSwitch },
 
   data: () => ({
     dialog: false,
@@ -206,6 +224,11 @@ export default {
     // Profile settings
     firstName: "",
     lastName: "",
+
+    // Calendar options
+    addToCalendar: false,
+    defaultCalendarKey: null,
+    defaultCalendarId: null,
   }),
 
   computed: {
@@ -224,8 +247,20 @@ export default {
     },
   },
 
+  async mounted() {
+    // Fetch and cache sub-calendars so the picker is populated even on first visit
+    try {
+      await get("/user/calendar-list")
+      await this.refreshAuthUser()
+      this.defaultCalendarKey = this.authUser.calendarOptions?.defaultCalendarKey ?? null
+      this.defaultCalendarId = this.authUser.calendarOptions?.defaultCalendarId ?? null
+    } catch {
+      // Non-critical — picker will show whatever is already cached
+    }
+  },
+
   methods: {
-    ...mapActions(["showError"]),
+    ...mapActions(["showError", "refreshAuthUser"]),
     deleteAccount() {
       _delete(`/user`)
         .then(() => {
@@ -260,6 +295,9 @@ export default {
   created() {
     this.firstName = this.authUser.firstName
     this.lastName = this.authUser.lastName
+    this.addToCalendar = this.authUser.calendarOptions?.addToCalendar ?? false
+    this.defaultCalendarKey = this.authUser.calendarOptions?.defaultCalendarKey ?? null
+    this.defaultCalendarId = this.authUser.calendarOptions?.defaultCalendarId ?? null
   },
 }
 </script>

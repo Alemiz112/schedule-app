@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"schej.it/server/errs"
 	"schej.it/server/models"
 	"schej.it/server/responses"
+	"schej.it/server/services/calendar"
 	"schej.it/server/utils"
 )
 
@@ -126,10 +128,49 @@ func approveAppointmentRequest(c *gin.Context) {
 		return
 	}
 
+	userInterface, _ := c.Get("authUser")
+	user := userInterface.(*models.User)
+
 	db.UpdateAppointmentRequestStatus(req.Id.Hex(), models.AppointmentApproved)
 	req.Status = models.AppointmentApproved
 
-	c.JSON(http.StatusOK, req)
+	calendarEventCreated := false
+	if user.CalendarOptions != nil && user.CalendarOptions.AddToCalendar {
+		calendarKey := user.CalendarOptions.DefaultCalendarKey
+		if calendarKey == "" && user.PrimaryAccountKey != nil {
+			calendarKey = *user.PrimaryAccountKey
+		}
+		if calendarKey != "" {
+			eventId := event.Id.Hex()
+			if event.ShortId != nil && *event.ShortId != "" {
+				eventId = *event.ShortId
+			}
+			attendeeEmails := []string{}
+			if req.Email != "" {
+				attendeeEmails = append(attendeeEmails, req.Email)
+			}
+			calendarId := user.CalendarOptions.DefaultCalendarId
+			err := calendar.CreateEventForUser(user, calendarKey, calendarId, calendar.CreateCalendarEventInput{
+				Title:          fmt.Sprintf("%s with %s", event.Name, req.Name),
+				StartDate:      req.StartDate.Time(),
+				EndDate:        req.EndDate.Time(),
+				Description:    fmt.Sprintf("Booked via Timeful: https://timeful.app/e/%s", eventId),
+				AttendeeEmails: attendeeEmails,
+			})
+			if err == nil {
+				calendarEventCreated = true
+			}
+		}
+	}
+
+	type approveResponse struct {
+		models.AppointmentRequest
+		CalendarEventCreated bool `json:"calendarEventCreated"`
+	}
+	c.JSON(http.StatusOK, approveResponse{
+		AppointmentRequest:   *req,
+		CalendarEventCreated: calendarEventCreated,
+	})
 }
 
 // @Summary Reject an appointment request (owner only)

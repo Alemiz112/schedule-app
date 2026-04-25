@@ -114,3 +114,8 @@ func (cal *ICSCalendar) GetCalendarEvents(calendarId string, timeMin time.Time, 
 
 	return events, nil
 }
+
+
+func (cal *ICSCalendar) CreateCalendarEvent(input CreateCalendarEventInput) error {
+	return fmt.Errorf("creating events not supported for ICS Calendar")
+}

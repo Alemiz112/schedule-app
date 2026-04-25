@@ -12,6 +12,64 @@ import (
 	"schej.it/server/utils"
 )
 
+func (calendar *OutlookCalendar) CreateCalendarEvent(input CreateCalendarEventInput) error {
+	type EmailAddress struct {
+		Address string `json:"address"`
+	}
+	type Attendee struct {
+		EmailAddress EmailAddress `json:"emailAddress"`
+		Type         string       `json:"type"`
+	}
+	type DateTimeTimeZone struct {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	}
+	type ItemBody struct {
+		ContentType string `json:"contentType"`
+		Content     string `json:"content"`
+	}
+	body := struct {
+		Subject   string           `json:"subject"`
+		Body      ItemBody         `json:"body"`
+		Start     DateTimeTimeZone `json:"start"`
+		End       DateTimeTimeZone `json:"end"`
+		Attendees []Attendee       `json:"attendees"`
+	}{
+		Subject: input.Title,
+		Body:    ItemBody{ContentType: "text", Content: input.Description},
+		Start:   DateTimeTimeZone{DateTime: input.StartDate.UTC().Format("2006-01-02T15:04:05"), TimeZone: "UTC"},
+		End:     DateTimeTimeZone{DateTime: input.EndDate.UTC().Format("2006-01-02T15:04:05"), TimeZone: "UTC"},
+	}
+	for _, email := range input.AttendeeEmails {
+		body.Attendees = append(body.Attendees, Attendee{
+			EmailAddress: EmailAddress{Address: email},
+			Type:         "required",
+		})
+	}
+
+	bodyBytes, _ := json.Marshal(body)
+	bodyMap := bson.M{}
+	json.Unmarshal(bodyBytes, &bodyMap)
+
+	eventsUrl := "https://graph.microsoft.com/v1.0/me/events"
+	if input.CalendarId != "" {
+		eventsUrl = fmt.Sprintf("https://graph.microsoft.com/v1.0/me/calendars/%s/events", input.CalendarId)
+	}
+	response := services.CallApi(nil, &calendar.OAuth2CalendarAuth, "POST", eventsUrl, &bodyMap)
+	defer response.Body.Close()
+
+	result := struct {
+		Error bson.M `json:"error"`
+	}{}
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		return err
+	}
+	if result.Error != nil {
+		return fmt.Errorf("outlook create event error: %v", result.Error)
+	}
+	return nil
+}
+
 type OutlookCalendar struct {
 	models.OAuth2CalendarAuth
 }

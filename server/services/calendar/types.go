@@ -6,9 +6,19 @@ import (
 	"schej.it/server/models"
 )
 
+type CreateCalendarEventInput struct {
+	Title          string
+	StartDate      time.Time
+	EndDate        time.Time
+	Description    string
+	AttendeeEmails []string
+	CalendarId     string // sub-calendar ID; providers fall back to primary/default if empty
+}
+
 type CalendarProvider interface {
 	GetCalendarList() (map[string]models.SubCalendar, error)
 	GetCalendarEvents(calendarId string, timeMin time.Time, timeMax time.Time) ([]models.CalendarEvent, error)
+	CreateCalendarEvent(input CreateCalendarEventInput) error
 }
 
 func GetCalendarProvider(calendarAccount models.CalendarAccount) CalendarProvider {

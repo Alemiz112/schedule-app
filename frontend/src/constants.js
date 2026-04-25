@@ -67,6 +67,9 @@ export const calendarOptionsDefaults = Object.freeze({
     startTime: 9,
     endTime: 17,
   },
+  addToCalendar: false,
+  defaultCalendarKey: null,
+  defaultCalendarId: null,
 })
 
 export const dayIndexToDayString = Object.freeze([

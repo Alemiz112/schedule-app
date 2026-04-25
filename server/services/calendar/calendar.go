@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"fmt"
 	"time"
 
 	"schej.it/server/models"
@@ -154,4 +155,24 @@ func GetUsersCalendarEvents(user *models.User, accounts models.Set[string], time
 	}
 
 	return calendarEventsMap, editedCalendarAccounts
+}
+
+// CreateEventForUser creates a calendar event in the user's specified calendar account and sub-calendar.
+// It refreshes the token if needed before creating.
+func CreateEventForUser(user *models.User, calendarAccountKey string, calendarId string, input CreateCalendarEventInput) error {
+	account, ok := user.CalendarAccounts[calendarAccountKey]
+	if !ok {
+		return fmt.Errorf("calendar account not found: %s", calendarAccountKey)
+	}
+	if account.CalendarType != models.GoogleCalendarType && account.CalendarType != models.OutlookCalendarType {
+		return fmt.Errorf("calendar type does not support event creation: %s", account.CalendarType)
+	}
+
+	auth.RefreshUserTokenIfNecessary(user, models.Set[string]{calendarAccountKey: {}})
+
+	// Re-fetch account after token refresh
+	account = user.CalendarAccounts[calendarAccountKey]
+	provider := GetCalendarProvider(account)
+	input.CalendarId = calendarId
+	return provider.CreateCalendarEvent(input)
 }

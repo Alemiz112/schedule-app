@@ -177,3 +177,8 @@ func parseTimeWithTZ(prop *ical.Prop) (time.Time, error) {
 
 	return t, nil
 }
+
+
+func (cal *AppleCalendar) CreateCalendarEvent(input CreateCalendarEventInput) error {
+	return fmt.Errorf("creating events not supported for Apple Calendar")
+}

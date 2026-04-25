@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -159,4 +160,58 @@ func (calendar *GoogleCalendar) GetCalendarEvents(calendarId string, timeMin tim
 	}
 
 	return calendarEvents, nil
+}
+
+func (calendar *GoogleCalendar) CreateCalendarEvent(input CreateCalendarEventInput) error {
+	type Attendee struct {
+		Email string `json:"email"`
+	}
+	type EventDateTime struct {
+		DateTime string `json:"dateTime"`
+	}
+	body := struct {
+		Summary     string        `json:"summary"`
+		Description string        `json:"description"`
+		Start       EventDateTime `json:"start"`
+		End         EventDateTime `json:"end"`
+		Attendees   []Attendee    `json:"attendees"`
+	}{
+		Summary:     input.Title,
+		Description: input.Description,
+		Start:       EventDateTime{DateTime: input.StartDate.Format(time.RFC3339)},
+		End:         EventDateTime{DateTime: input.EndDate.Format(time.RFC3339)},
+	}
+	for _, email := range input.AttendeeEmails {
+		body.Attendees = append(body.Attendees, Attendee{Email: email})
+	}
+
+	calendarId := input.CalendarId
+	if calendarId == "" {
+		calendarId = "primary"
+	}
+	bodyBytes, _ := json.Marshal(body)
+	req, _ := http.NewRequest(
+		"POST",
+		fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", url.PathEscape(calendarId)),
+		bytes.NewBuffer(bodyBytes),
+	)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", calendar.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Error *errs.GoogleAPIError `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

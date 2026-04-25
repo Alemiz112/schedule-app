@@ -54,8 +54,11 @@ type SubCalendar struct {
 
 // CalendarOptions contains options for calendar autofill
 type CalendarOptions struct {
-	BufferTime   BufferTimeOptions   `json:"bufferTime" bson:"bufferTime"`
-	WorkingHours WorkingHoursOptions `json:"workingHours" bson:"workingHours"`
+	BufferTime         BufferTimeOptions   `json:"bufferTime" bson:"bufferTime"`
+	WorkingHours       WorkingHoursOptions `json:"workingHours" bson:"workingHours"`
+	AddToCalendar      bool               `json:"addToCalendar" bson:"addToCalendar"`
+	DefaultCalendarKey string             `json:"defaultCalendarKey" bson:"defaultCalendarKey"`
+	DefaultCalendarId  string             `json:"defaultCalendarId" bson:"defaultCalendarId"`
 }
 type BufferTimeOptions struct {
 	Enabled bool `json:"enabled" bson:"enabled"`

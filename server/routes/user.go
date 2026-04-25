@@ -34,6 +34,7 @@ func InitUser(router *gin.RouterGroup) {
 	userRouter.GET("/events", getEvents)
 	userRouter.POST("/events/:eventId/set-folder", setEventFolder)
 	userRouter.GET("/calendars", getCalendars)
+	userRouter.GET("/calendar-list", getCalendarList)
 	userRouter.POST("/add-google-calendar-account", addGoogleCalendarAccount)
 	userRouter.POST("/add-apple-calendar-account", addAppleCalendarAccount)
 	userRouter.POST("/add-outlook-calendar-account", addOutlookCalendarAccount)
@@ -42,6 +43,7 @@ func InitUser(router *gin.RouterGroup) {
 	userRouter.POST("/toggle-calendar", toggleCalendar)
 	userRouter.POST("/toggle-sub-calendar", toggleSubCalendar)
 	userRouter.GET("/searchContacts", searchContacts)
+	userRouter.POST("/create-calendar-event", createCalendarEvent)
 	userRouter.DELETE("", deleteUser)
 }
 
@@ -100,8 +102,11 @@ func updateName(c *gin.Context) {
 // @Router /user/calendar-options [patch]
 func updateCalendarOptions(c *gin.Context) {
 	payload := struct {
-		BufferTime   *models.BufferTimeOptions   `json:"bufferTime"`
-		WorkingHours *models.WorkingHoursOptions `json:"workingHours"`
+		BufferTime         *models.BufferTimeOptions   `json:"bufferTime"`
+		WorkingHours       *models.WorkingHoursOptions `json:"workingHours"`
+		AddToCalendar      *bool                       `json:"addToCalendar"`
+		DefaultCalendarKey *string                     `json:"defaultCalendarKey"`
+		DefaultCalendarId  *string                     `json:"defaultCalendarId"`
 	}{}
 	if err := c.BindJSON(&payload); err != nil {
 		return
@@ -130,6 +135,15 @@ func updateCalendarOptions(c *gin.Context) {
 	}
 	if payload.WorkingHours != nil {
 		authUser.CalendarOptions.WorkingHours = *payload.WorkingHours
+	}
+	if payload.AddToCalendar != nil {
+		authUser.CalendarOptions.AddToCalendar = *payload.AddToCalendar
+	}
+	if payload.DefaultCalendarKey != nil {
+		authUser.CalendarOptions.DefaultCalendarKey = *payload.DefaultCalendarKey
+	}
+	if payload.DefaultCalendarId != nil {
+		authUser.CalendarOptions.DefaultCalendarId = *payload.DefaultCalendarId
 	}
 
 	// Update database
@@ -322,6 +336,74 @@ func getCalendars(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, calendarEvents)
+}
+
+// @Summary Fetches sub-calendars for all Google/Outlook accounts and caches them on the user
+// @Tags user
+// @Produce json
+// @Success 200 {object} map[string]models.CalendarAccount
+// @Router /user/calendar-list [get]
+func getCalendarList(c *gin.Context) {
+	user := utils.GetAuthUser(c)
+
+	auth.RefreshUserTokenIfNecessary(user, nil)
+
+	type result struct {
+		key  string
+		list map[string]models.SubCalendar
+		err  error
+	}
+
+	ch := make(chan result)
+	count := 0
+
+	for key, account := range user.CalendarAccounts {
+		if account.CalendarType != models.GoogleCalendarType && account.CalendarType != models.OutlookCalendarType {
+			continue
+		}
+		count++
+		go func(k string, acc models.CalendarAccount) {
+			list, err := calendar.GetCalendarProvider(acc).GetCalendarList()
+			ch <- result{key: k, list: list, err: err}
+		}(key, account)
+	}
+
+	updated := false
+	for i := 0; i < count; i++ {
+		r := <-ch
+		if r.err != nil {
+			continue
+		}
+		acc := user.CalendarAccounts[r.key]
+		if acc.SubCalendars == nil {
+			acc.SubCalendars = &r.list
+			updated = true
+		} else {
+			for id, sub := range r.list {
+				if _, exists := (*acc.SubCalendars)[id]; !exists {
+					(*acc.SubCalendars)[id] = sub
+					updated = true
+				}
+			}
+			for id := range *acc.SubCalendars {
+				if _, exists := r.list[id]; !exists {
+					delete(*acc.SubCalendars, id)
+					updated = true
+				}
+			}
+		}
+		user.CalendarAccounts[r.key] = acc
+	}
+
+	if updated {
+		db.UsersCollection.FindOneAndUpdate(
+			context.Background(),
+			bson.M{"_id": user.Id},
+			bson.M{"$set": bson.M{"calendarAccounts": user.CalendarAccounts}},
+		)
+	}
+
+	c.JSON(http.StatusOK, user.CalendarAccounts)
 }
 
 // @Summary Adds a new calendar account
@@ -704,6 +786,55 @@ func searchContacts(c *gin.Context) {
 // @Produce json
 // @Success 200
 // @Router /user [delete]
+func createCalendarEvent(c *gin.Context) {
+	payload := struct {
+		Title          string             `json:"title" binding:"required"`
+		StartDate      primitive.DateTime `json:"startDate" binding:"required"`
+		EndDate        primitive.DateTime `json:"endDate" binding:"required"`
+		Description    string             `json:"description"`
+		AttendeeEmails []string           `json:"attendeeEmails"`
+	}{}
+	if err := c.BindJSON(&payload); err != nil {
+		return
+	}
+
+	user := utils.GetAuthUser(c)
+
+	calendarKey := ""
+	if user.CalendarOptions != nil {
+		calendarKey = user.CalendarOptions.DefaultCalendarKey
+	}
+	if calendarKey == "" {
+		if user.PrimaryAccountKey != nil {
+			calendarKey = *user.PrimaryAccountKey
+		}
+	}
+
+	if calendarKey == "" {
+		c.JSON(http.StatusBadRequest, responses.Error{Error: "no-calendar-account"})
+		return
+	}
+
+	calendarId := ""
+	if user.CalendarOptions != nil {
+		calendarId = user.CalendarOptions.DefaultCalendarId
+	}
+
+	err := calendar.CreateEventForUser(user, calendarKey, calendarId, calendar.CreateCalendarEventInput{
+		Title:          payload.Title,
+		StartDate:      payload.StartDate.Time(),
+		EndDate:        payload.EndDate.Time(),
+		Description:    payload.Description,
+		AttendeeEmails: payload.AttendeeEmails,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, responses.Error{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func deleteUser(c *gin.Context) {
 	userInterface, _ := c.Get("authUser")
 	user := userInterface.(*models.User)
