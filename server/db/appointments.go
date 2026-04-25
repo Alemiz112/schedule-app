@@ -55,6 +55,22 @@ func GetAppointmentRequestsByEvent(eventId string, statusFilter *models.Appointm
 	return reqs
 }
 
+// GetActiveAppointmentCount returns the number of pending+approved requests for an event.
+func GetActiveAppointmentCount(eventId string) int {
+	objectId, err := primitive.ObjectIDFromHex(eventId)
+	if err != nil {
+		return 0
+	}
+	count, err := AppointmentRequestsCollection.CountDocuments(context.Background(), bson.M{
+		"eventId": objectId,
+		"status":  bson.M{"$in": bson.A{models.AppointmentPending, models.AppointmentApproved}},
+	})
+	if err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	return int(count)
+}
+
 func UpdateAppointmentRequestStatus(requestId string, status models.AppointmentStatus) {
 	objectId, err := primitive.ObjectIDFromHex(requestId)
 	if err != nil {

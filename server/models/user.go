@@ -31,15 +31,24 @@ type User struct {
 	// Calendar options
 	CalendarOptions *CalendarOptions `json:"calendarOptions" bson:"calendarOptions,omitempty"`
 
-	NumEventsCreated int     `json:"numEventsCreated" bson:"numEventsCreated,omitempty"`
+	NumEventsCreated int `json:"numEventsCreated" bson:"numEventsCreated,omitempty"`
+
+	Role UserRole `json:"role" bson:"role,omitempty"`
 }
 
 // Declare the possible types of TokenOrigin
 type TokenOriginType string
 
 const (
-	IOS TokenOriginType = "ios"
+	IOS     TokenOriginType = "ios"
 	ANDROID TokenOriginType = "android"
-	WEB TokenOriginType = "web"
+	WEB     TokenOriginType = "web"
+)
+
+type UserRole string
+
+const (
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
 )
 

@@ -21,8 +21,14 @@ const (
 	OtpExpired            string = "otp-expired"
 	OtpInvalidCode        string = "otp-invalid-code"
 	OtpTooManyAttempts             string = "otp-too-many-attempts"
-	EventNotAppointment            string = "event-not-appointment"
-	AppointmentRequestNotFound     string = "appointment-request-not-found"
+	EventNotAppointment        string = "event-not-appointment"
+	AppointmentRequestNotFound string = "appointment-request-not-found"
+	RegistrationDisabled string = "registration-disabled"
+	NotAdmin             string = "not-admin"
+	UserAlreadyExists    string = "user-already-exists"
+	ShortIdTaken             string = "short-id-taken"
+	ShortIdInvalid           string = "short-id-invalid"
+	AppointmentLimitReached  string = "appointment-limit-reached"
 )
 
 type GoogleAPIError struct {

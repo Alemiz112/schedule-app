@@ -11,8 +11,8 @@
           <v-spacer />
 
           <LandingPageHeader>
-            <v-btn text @click="openHowItWorksDialog">How it works</v-btn>
-            <v-btn text href="/blog">Blog</v-btn>
+<!--            <v-btn text @click="openHowItWorksDialog">How it works</v-btn>-->
+<!--            <v-btn text href="/blog">Blog</v-btn>-->
             <div v-if="authUser" class="tw-ml-2">
               <AuthUserMenu />
             </div>
@@ -20,7 +20,6 @@
           </LandingPageHeader>
         </div>
 
-        <FormerlyKnownAs />
       </div>
 
       <div class="tw-flex tw-flex-col tw-items-center">
@@ -74,21 +73,54 @@
           </div>
         </div>
 
-        <div class="tw-mb-12 tw-space-y-2">
+        <!-- Logged-in CTA -->
+        <div v-if="authUser" class="tw-mb-12">
           <v-btn
             class="tw-block tw-self-center tw-rounded-lg tw-bg-green tw-px-10 tw-text-base sm:tw-px-10 lg:tw-px-12"
             dark
-            @click="authUser ? openDashboard() : (newDialog = true)"
+            @click="openDashboard"
             large
             :x-large="$vuetify.breakpoint.mdAndUp"
           >
-            {{ authUser ? "Open dashboard" : "Create event" }}
+            Open dashboard
           </v-btn>
-          <div
-            v-if="!authUser"
-            class="tw-text-center tw-text-xs tw-text-dark-gray sm:tw-text-sm"
+        </div>
+
+        <!-- Not-logged-in CTA -->
+        <div
+          v-else
+          class="tw-mb-12 tw-flex tw-w-full tw-max-w-xs tw-flex-col tw-items-center tw-gap-3 sm:tw-max-w-sm"
+        >
+          <v-btn
+            class="tw-w-full tw-rounded-lg tw-bg-green tw-text-base"
+            dark
+            large
+            :to="{ name: 'sign-in' }"
           >
-            It's free! No login required.
+            Log in to continue
+          </v-btn>
+
+          <div class="tw-text-sm tw-text-dark-gray">or open an event by code</div>
+
+          <div class="tw-flex tw-w-full tw-gap-2">
+            <v-text-field
+              v-model="eventCode"
+              placeholder="Event code..."
+              outlined
+              dense
+              hide-details
+              background-color="white"
+              @keyup.enter="openEventCode"
+            />
+            <v-btn
+              outlined
+              color="primary"
+              height="40"
+              :disabled="!eventCode.trim()"
+              @click="openEventCode"
+            >
+              <v-icon>mdi-arrow-right</v-icon>
+            </v-btn>
           </div>
         </div>
         <div class="tw-relative tw-w-full">
@@ -96,176 +128,9 @@
           <div
             class="tw-absolute -tw-bottom-12 tw-left-1/2 tw-h-[85%] tw-w-screen -tw-translate-x-1/2 tw-bg-green sm:-tw-bottom-20"
           ></div>
-
-          <!-- Hero video -->
-          <div
-            class="tw-relative tw-z-20 tw-w-full tw-rounded-lg tw-border tw-border-light-gray-stroke tw-bg-white tw-shadow-xl sm:tw-rounded-xl md:tw-mx-auto md:tw-w-fit"
-          >
-            <div
-              class="tw-relative tw-mx-4 tw-aspect-square md:tw-size-[700px] lg:tw-size-[800px]"
-            >
-              <v-img
-                class="tw-absolute tw-left-0 tw-top-0 tw-z-20 tw-size-full tw-transition-opacity tw-duration-300"
-                :class="{ 'tw-opacity-0': isVideoPlaying }"
-                src="@/assets/img/hero.jpg"
-                transition="fade-transition"
-                contain
-              />
-              <vue-vimeo-player
-                video-url="https://player.vimeo.com/video/1083205305?h=d58bef862a"
-                :player-width="800"
-                :player-height="800"
-                :options="{
-                  muted: true,
-                  playsinline: true,
-                  responsive: true,
-                }"
-                :controls="false"
-                :autoplay="true"
-                :loop="true"
-                @play="onPlay"
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>
-
-    <!-- How it works -->
-    <div
-      id="how-it-works"
-      class="tw-grid tw-place-content-center tw-px-4 tw-pt-12"
-    >
-      <div class="tw-mx-auto tw-flex tw-flex-col tw-gap-4">
-        <div
-          class="tw-mb-4 tw-text-center tw-text-2xl tw-font-medium sm:tw-text-3xl lg:tw-text-4xl"
-        >
-          How it works
-        </div>
-        <div
-          v-for="(step, i) in howItWorksSteps"
-          :key="i"
-          class="tw-flex tw-items-center tw-gap-2"
-        >
-          <NumberBullet>{{ i + 1 }}</NumberBullet>
-          <div class="tw-text-base tw-font-medium md:tw-text-xl">
-            <div v-html="step"></div>
-          </div>
-        </div>
-      </div>
-      <div
-        class="tw-mb-6 tw-mt-10 tw-text-center tw-text-3xl tw-font-medium md:tw-mb-12 md:tw-mt-20 md:tw-text-6xl"
-      >
-        It's that simple.
-      </div>
-      <v-img
-        alt="schej character"
-        src="@/assets/schej_character.png"
-        :height="isPhone ? 200 : 300"
-        transition="fade-transition"
-        contain
-        class="-tw-mb-12"
-      />
-    </div>
-
-    <!-- Video -->
-    <div
-      class="tw-flex tw-justify-center tw-bg-green tw-px-4 tw-pb-12 tw-pt-24 md:tw-pb-16"
-    >
-      <div
-        class="tw-h-[300px] tw-max-w-3xl tw-flex-1 sm:tw-h-[400px] md:tw-h-[450px]"
-      >
-        <iframe
-          class="tw-h-full tw-w-full"
-          src="https://www.youtube.com/embed/vFkBC8BrkOk?si=pF64JAIyDhom_1do"
-          title="Timeful demo"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen
-        ></iframe>
-      </div>
-    </div>
-
-    <!-- Reddit Testimonials -->
-    <div class="tw-flex tw-justify-center tw-bg-light-gray tw-py-12">
-      <div class="tw-mx-4 tw-max-w-3xl tw-flex-1 sm:tw-mx-16">
-        <div class="tw-text-center">
-          <Header> People love us on Reddit! </Header>
-          <div
-            class="tw-mt-8 tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2"
-          >
-            <div
-              v-for="(comment, index) in redditComments"
-              :key="index"
-              class="tw-flex tw-flex-col tw-rounded-lg tw-bg-white tw-p-4 tw-shadow-md"
-              :class="{
-                'sm:tw-col-span-2 sm:tw-mx-auto sm:tw-max-w-md':
-                  redditComments.length % 2 !== 0 &&
-                  index === redditComments.length - 1,
-              }"
-            >
-              <div class="tw-flex tw-flex-1 tw-items-center">
-                <div
-                  class="reddit-comment tw-text-left tw-text-sm tw-text-very-dark-gray"
-                  v-html="comment.text.replace(/\n/g, '<br />')"
-                ></div>
-              </div>
-              <div
-                class="tw-my-4 tw-h-px tw-w-full tw-bg-light-gray-stroke"
-              ></div>
-              <div class="tw-flex tw-items-center tw-justify-between">
-                <div class="tw-text-right">
-                  <a
-                    :href="comment.link"
-                    target="_blank"
-                    class="tw-text-sm tw-font-medium tw-text-dark-gray hover:tw-underline"
-                  >
-                    {{ comment.author }}
-                  </a>
-                </div>
-                <div class="tw-flex tw-items-center tw-gap-2">
-                  <v-avatar size="24">
-                    <v-img :src="comment.picture" />
-                  </v-avatar>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FAQ -->
-    <div class="tw-flex tw-justify-center tw-pt-12">
-      <div class="tw-mx-4 tw-mb-12 tw-max-w-3xl tw-flex-1 sm:tw-mx-16">
-        <div id="faq-section" class="tw-text-center lg:tw-pt-3">
-          <Header> Frequently Asked Questions </Header>
-          <div
-            class="tw-grid tw-grid-cols-1 tw-gap-3 sm:tw-text-xl lg:tw-text-2xl"
-          >
-            <FAQ
-              v-for="faq in faqs"
-              :key="faq.question"
-              @signIn="signIn"
-              v-bind="faq"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <Footer />
-
-    <!-- Sign in dialog -->
-    <SignInDialog
-      v-model="signInDialog"
-      @signIn="_signIn"
-      @emailSignIn="_emailSignIn"
-    />
-
-    <!-- New event dialog -->
-    <NewDialog v-model="newDialog" no-tabs @signIn="signIn" />
 
     <!-- Add the dialog component -->
     <HowItWorksDialog
@@ -291,54 +156,44 @@
 
 <script>
 import LandingPageCalendar from "@/components/landing/LandingPageCalendar.vue"
-import { isPhone, signInGoogle, signInOutlook } from "@/utils"
-import FAQ from "@/components/FAQ.vue"
+import { isPhone } from "@/utils"
 import Header from "@/components/Header.vue"
 import NumberBullet from "@/components/NumberBullet.vue"
 import NewEvent from "@/components/NewEvent.vue"
-import NewDialog from "@/components/NewDialog.vue"
 import LandingPageHeader from "@/components/landing/LandingPageHeader.vue"
 import Logo from "@/components/Logo.vue"
 import GithubButton from "vue-github-button"
-import SignInDialog from "@/components/SignInDialog.vue"
-import { calendarTypes } from "@/constants"
 import HowItWorksDialog from "@/components/HowItWorksDialog.vue"
 import { vueVimeoPlayer } from "vue-vimeo-player"
 import Footer from "@/components/Footer.vue"
 import PronunciationMenu from "@/components/PronunciationMenu.vue"
-import { mapState, mapMutations } from "vuex"
+import { mapState } from "vuex"
 import AuthUserMenu from "@/components/AuthUserMenu.vue"
-import FormerlyKnownAs from "@/components/FormerlyKnownAs.vue"
 
 export default {
   name: "Landing",
 
   metaInfo: {
-    title: "Timeful (formerly Schej) - Find a time to meet",
+    title: "Timeful - Find a time to meet",
   },
 
   components: {
     LandingPageCalendar,
-    FAQ,
     Header,
     NumberBullet,
     NewEvent,
-    NewDialog,
     LandingPageHeader,
     GithubButton,
     Logo,
-    SignInDialog,
     HowItWorksDialog,
     vueVimeoPlayer,
     Footer,
     PronunciationMenu,
     AuthUserMenu,
-    FormerlyKnownAs,
   },
 
   data: () => ({
-    signInDialog: false,
-    newDialog: false,
+    eventCode: "",
     githubSnackbar: true,
     howItWorksSteps: [
       "Create a Timeful event",
@@ -444,8 +299,6 @@ export default {
       //     "https://styles.redditmedia.com/t5_d7myp/styles/profileIcon_snoof50f1128-f439-433b-a6b2-8e987630e506-headshot.png?width=64&height=64&frame=1&auto=webp&crop=&s=94077bf80603c2855747f1bfc0b9dd1539fae75c",
       // },
     ],
-    rive: null,
-    showSchejy: false,
     showHowItWorksDialog: false,
     isVideoPlaying: false,
   }),
@@ -458,47 +311,10 @@ export default {
   },
 
   methods: {
-    ...mapMutations(["setAuthUser"]),
-    loadRiveAnimation() {
-      // if (!this.rive) {
-      //   this.rive = new Rive({
-      //     src: "/rive/schej.riv",
-      //     canvas: document.querySelector("canvas"),
-      //     autoplay: false,
-      //     stateMachines: "wave",
-      //     onLoad: () => {
-      //       // r.resizeDrawingSurfaceToCanvas()
-      //     },
-      //   })
-      //   setTimeout(() => {
-      //     this.showSchejy = true
-      //     setTimeout(() => {
-      //       this.rive.play("wave")
-      //     }, 1000)
-      //   }, 4000)
-      // } else {
-      //   this.rive.play("wave")
-      // }
-    },
-    _signIn(calendarType) {
-      if (calendarType === calendarTypes.GOOGLE) {
-        signInGoogle({ state: null, selectAccount: true })
-      } else if (calendarType === calendarTypes.OUTLOOK) {
-        // NOTE: selectAccount is not supported implemented yet for Outlook, maybe add it later
-        signInOutlook({ state: null, selectAccount: true })
-      }
-    },
-    _emailSignIn(user) {
-      this.setAuthUser(user)
-      this.$posthog?.identify(user._id, {
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      })
-      this.$router.replace({ name: "home" })
-    },
-    signIn() {
-      this.$router.push({ name: "sign-in" })
+    openEventCode() {
+      const code = this.eventCode.trim()
+      if (!code) return
+      this.$router.push({ name: "event", params: { eventId: code } })
     },
     openHowItWorksDialog() {
       this.showHowItWorksDialog = true
@@ -514,21 +330,6 @@ export default {
     },
   },
 
-  beforeDestroy() {
-    this.rive?.cleanup()
-  },
 
-  watch: {
-    [`$vuetify.breakpoint.name`]: {
-      immediate: true,
-      handler() {
-        if (this.$vuetify.breakpoint.mdAndUp) {
-          setTimeout(() => {
-            this.loadRiveAnimation()
-          }, 0)
-        }
-      },
-    },
-  },
 }
 </script>

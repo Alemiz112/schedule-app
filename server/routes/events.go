@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,7 +32,7 @@ import (
 func InitEvents(router *gin.RouterGroup) {
 	eventRouter := router.Group("/events")
 
-	eventRouter.POST("", createEvent)
+	eventRouter.POST("", middleware.AuthRequired(), createEvent)
 	eventRouter.POST("/import", middleware.AuthRequired(), importEvent)
 	eventRouter.PUT("/:eventId", editEvent)
 	eventRouter.GET("/:eventId/ids", getEventIds)
@@ -46,6 +47,7 @@ func InitEvents(router *gin.RouterGroup) {
 	eventRouter.DELETE("/:eventId", middleware.AuthRequired(), deleteEvent)
 	eventRouter.POST("/:eventId/duplicate", middleware.AuthRequired(), duplicateEvent)
 	eventRouter.POST("/:eventId/archive", middleware.AuthRequired(), archiveEvent)
+	eventRouter.PUT("/:eventId/custom-slug", middleware.AuthRequired(), updateCustomSlug)
 
 	// Appointment routes
 	eventRouter.POST("/:eventId/appointment-requests", createAppointmentRequest)
@@ -96,30 +98,17 @@ func createEvent(c *gin.Context) {
 		Attendees []string `json:"attendees"`
 
 		// Whether this event is an appointment
-		IsAppointment *bool `json:"isAppointment"`
+		IsAppointment   *bool `json:"isAppointment"`
+		MaxAppointments *int  `json:"maxAppointments"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		fmt.Println(err)
 		return
 	}
-	session := sessions.Default(c)
 
-	// If user logged in, set owner id to their user id, otherwise set owner id to nil
-	userIdInterface := session.Get("userId")
-	userId, signedIn := userIdInterface.(string)
-	var user *models.User
-	var ownerId primitive.ObjectID
-	if signedIn {
-		user = db.GetUserById(userId)
-		if user == nil {
-			signedIn = false
-			ownerId = primitive.NilObjectID
-		} else {
-			ownerId = utils.StringToObjectID(userId)
-		}
-	} else {
-		ownerId = primitive.NilObjectID
-	}
+	userInterface, _ := c.Get("authUser")
+	user := userInterface.(*models.User)
+	ownerId := user.Id
 
 	// Construct event object
 	numResponses := 0
@@ -144,6 +133,7 @@ func createEvent(c *gin.Context) {
 		TimeIncrement:            payload.TimeIncrement,
 		Type:                     payload.Type,
 		IsAppointment:            payload.IsAppointment,
+		MaxAppointments:          payload.MaxAppointments,
 		SignUpResponses:          make(map[string]*models.SignUpResponse),
 		NumResponses:             &numResponses,
 	}
@@ -154,13 +144,7 @@ func createEvent(c *gin.Context) {
 
 	// Schedule reminder emails if remindees array is not empty
 	if len(payload.Remindees) > 0 {
-		// Determine owner name
-		var ownerName string
-		if signedIn {
-			ownerName = user.FirstName
-		} else {
-			ownerName = "Somebody"
-		}
+		ownerName := user.FirstName
 
 		// Schedule email reminders for each of the remindees' emails
 		remindees := make([]models.Remindee, 0)
@@ -178,39 +162,12 @@ func createEvent(c *gin.Context) {
 
 	attendees := make([]models.Attendee, 0)
 	if payload.Type == models.GROUP {
-
-		if signedIn {
-			// 	// Add event owner to group by default
-			// 	enabledCalendars := make(map[string][]string)
-			// 	for email, calendarAccount := range user.CalendarAccounts {
-			// 		if utils.Coalesce(calendarAccount.Enabled) {
-			// 			enabledCalendars[email] = make([]string, 0)
-			// 			for calendarId, subCalendar := range utils.Coalesce(calendarAccount.SubCalendars) {
-			// 				if utils.Coalesce(subCalendar.Enabled) {
-			// 					enabledCalendars[email] = append(enabledCalendars[email], calendarId)
-			// 				}
-			// 			}
-			// 		}
-			// 	}
-			// 	event.Responses[user.Id.Hex()] = &models.Response{
-			// 		UserId:                  user.Id,
-			// 		UseCalendarAvailability: utils.TruePtr(),
-			// 		EnabledCalendars:        &enabledCalendars,
-			// 	}
-
-			// Add owner as attendee
-			attendees = append(attendees, models.Attendee{Email: user.Email, Declined: utils.FalsePtr(), EventId: event.Id})
-		}
+		// Add owner as attendee
+		attendees = append(attendees, models.Attendee{Email: user.Email, Declined: utils.FalsePtr(), EventId: event.Id})
 
 		// Add attendees and send email
 		if len(payload.Attendees) > 0 {
-			// Determine owner name
-			var ownerName string
-			if signedIn {
-				ownerName = user.FirstName
-			} else {
-				ownerName = "Somebody"
-			}
+			ownerName := user.FirstName
 
 			// Add attendees to attendees array and send invite emails
 			availabilityGroupInviteEmailId := 9
@@ -237,14 +194,7 @@ func createEvent(c *gin.Context) {
 	}
 	insertedId := result.InsertedID.(primitive.ObjectID).Hex()
 
-	// Send slackbot message
-	// var creator string
-	if signedIn {
-		// creator = fmt.Sprintf("%s %s (%s)", user.FirstName, user.LastName, user.Email)
-		db.UsersCollection.UpdateOne(context.Background(), bson.M{"_id": ownerId}, bson.M{"$inc": bson.M{"numEventsCreated": 1}})
-	} else {
-		// creator = "Guest :face_with_open_eyes_and_hand_over_mouth:"
-	}
+	db.UsersCollection.UpdateOne(context.Background(), bson.M{"_id": ownerId}, bson.M{"$inc": bson.M{"numEventsCreated": 1}})
 	// slackbot.SendEventCreatedMessage(insertedId, creator, event, len(attendees))
 
 	c.JSON(http.StatusCreated, gin.H{"eventId": insertedId, "shortId": event.ShortId})
@@ -288,7 +238,8 @@ func editEvent(c *gin.Context) {
 		Attendees []string `json:"attendees"`
 
 		// Whether this event is an appointment
-		IsAppointment *bool `json:"isAppointment"`
+		IsAppointment   *bool `json:"isAppointment"`
+		MaxAppointments *int  `json:"maxAppointments"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		logger.StdErr.Println(err)
@@ -337,6 +288,7 @@ func editEvent(c *gin.Context) {
 	event.CollectEmails = payload.CollectEmails
 	event.Type = payload.Type
 	event.IsAppointment = payload.IsAppointment
+	event.MaxAppointments = payload.MaxAppointments
 
 	// Update remindees
 	if event.Type == models.DOW || event.Type == models.SPECIFIC_DATES {
@@ -1884,6 +1836,78 @@ func stripSensitiveUserFields(user *models.User) {
 	user.CalendarAccounts = nil
 	user.CalendarOptions = nil
 	user.PrimaryAccountKey = nil
+}
+
+var customSlugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$`)
+
+// @Summary Set or clear a custom slug for an event
+// @Tags events
+// @Accept json
+// @Produce json
+// @Param eventId path string true "Event ID"
+// @Param payload body object{slug=string} true "Custom slug (empty string to clear)"
+// @Success 200 {object} object{customSlug=string}
+// @Router /events/{eventId}/custom-slug [put]
+func updateCustomSlug(c *gin.Context) {
+	payload := struct {
+		Slug string `json:"slug"`
+	}{}
+	if err := c.Bind(&payload); err != nil {
+		return
+	}
+
+	eventId := c.Param("eventId")
+	event := db.GetEventByEitherId(eventId)
+	if event == nil {
+		c.JSON(http.StatusNotFound, responses.Error{Error: errs.EventNotFound})
+		return
+	}
+
+	userInterface, _ := c.Get("authUser")
+	user := userInterface.(*models.User)
+	if event.OwnerId != user.Id {
+		c.JSON(http.StatusForbidden, responses.Error{Error: errs.UserNotEventOwner})
+		return
+	}
+
+	slug := strings.ToLower(strings.TrimSpace(payload.Slug))
+
+	// Empty slug → clear the custom slug
+	if slug == "" {
+		_, err := db.EventsCollection.UpdateOne(
+			context.Background(),
+			bson.M{"_id": event.Id},
+			bson.M{"$unset": bson.M{"customSlug": ""}},
+		)
+		if err != nil {
+			logger.StdErr.Panicln(err)
+		}
+		c.JSON(http.StatusOK, gin.H{"customSlug": nil})
+		return
+	}
+
+	if !customSlugRegex.MatchString(slug) {
+		c.JSON(http.StatusBadRequest, responses.Error{Error: errs.ShortIdInvalid})
+		return
+	}
+
+	// Check uniqueness against both shortId and customSlug, excluding this event
+	existing := db.GetEventByCode(slug)
+	if existing != nil && existing.Id != event.Id {
+		c.JSON(http.StatusConflict, responses.Error{Error: errs.ShortIdTaken})
+		return
+	}
+
+	_, err := db.EventsCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": event.Id},
+		bson.M{"$set": bson.M{"customSlug": slug}},
+	)
+	if err != nil {
+		logger.StdErr.Panicln(err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"customSlug": slug})
 }
 
 // Helper function to get all responses as a map (for backward compatibility)

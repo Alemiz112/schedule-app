@@ -44,6 +44,7 @@ type SignUpResponse struct {
 type Event struct {
 	Id          primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	ShortId     *string            `json:"shortId" bson:"shortId,omitempty"`
+	CustomSlug  *string            `json:"customSlug" bson:"customSlug,omitempty"`
 	OwnerId     primitive.ObjectID `json:"ownerId" bson:"ownerId,omitempty"`
 	Name        string             `json:"name" bson:"name,omitempty"`
 	Description *string            `json:"description" bson:"description,omitempty"`
@@ -102,6 +103,9 @@ type Event struct {
 
 	// Whether this event is an appointment (guests pick a single time slot, owner must approve)
 	IsAppointment *bool `json:"isAppointment" bson:"isAppointment,omitempty"`
+
+	// Maximum number of pending+approved appointments allowed (0 or nil = unlimited)
+	MaxAppointments *int `json:"maxAppointments" bson:"maxAppointments,omitempty"`
 }
 
 func (e *Event) GetId() string {

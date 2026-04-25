@@ -1,8 +1,5 @@
 <template>
   <span>
-    <FormerlyKnownAs
-      class="tw-mx-auto tw-mb-10 tw-mt-3 tw-max-w-6xl tw-pl-4 sm:tw-pl-12"
-    />
     <div v-if="event" class="tw-mt-8 tw-h-full">
       <!-- Mark availability option dialog -->
       <MarkAvailabilityDialog
@@ -38,6 +35,14 @@
         :signUpBlock="currSignUpBlock"
         @submit="signUpForBlock"
         :event="event"
+      />
+
+      <!-- Edit event code dialog -->
+      <EditEventCodeDialog
+        v-if="event && canEdit"
+        v-model="editCodeDialog"
+        :event="event"
+        @updated="onCodeUpdated"
       />
 
       <!-- Edit event dialog -->
@@ -155,6 +160,14 @@
                       text
                     >
                       Edit {{ isGroup ? "group" : "event" }}
+                    </v-btn>
+                    <v-btn
+                      v-if="!isGroup"
+                      text
+                      class="tw-px-2 tw-text-sm tw-text-green"
+                      @click="editCodeDialog = true"
+                    >
+                      Edit code
                     </v-btn>
                   </template>
                 </div>
@@ -470,9 +483,9 @@ import MarkAvailabilityDialog from "@/components/calendar_permission_dialogs/Mar
 import InvitationDialog from "@/components/groups/InvitationDialog.vue"
 import HelpDialog from "@/components/HelpDialog.vue"
 import EventDescription from "@/components/event/EventDescription.vue"
-import FormerlyKnownAs from "@/components/FormerlyKnownAs.vue"
 import AppointmentBookingPanel from "@/components/appointments/AppointmentBookingPanel.vue"
 import AppointmentRequestsPanel from "@/components/appointments/AppointmentRequestsPanel.vue"
+import EditEventCodeDialog from "@/components/event/EditEventCodeDialog.vue"
 export default {
   name: "Event",
 
@@ -495,9 +508,9 @@ export default {
     InvitationDialog,
     HelpDialog,
     EventDescription,
-    FormerlyKnownAs,
     AppointmentBookingPanel,
     AppointmentRequestsPanel,
+    EditEventCodeDialog,
   },
 
   data: () => ({
@@ -511,6 +524,7 @@ export default {
     invitationDialog: false,
     pagesNotVisitedDialog: false,
     helpDialog: false,
+    editCodeDialog: false,
 
     loading: true,
     calendarEventsMap: {},
@@ -589,6 +603,7 @@ export default {
     eventType() {
       if (this.isGroup) return "group"
       else if (this.isSignUp) return "signup"
+      else if (this.isAppointment) return "appointment"
       else return "event"
     },
     areUnsavedChanges() {
@@ -676,8 +691,9 @@ export default {
     },
     copyLink() {
       /* Copies event link to clipboard */
+      const code = this.event.customSlug ?? this.event.shortId ?? this.event._id
       navigator.clipboard.writeText(
-        `${window.location.origin}/e/${this.event.shortId ?? this.event._id}`
+        `${window.location.origin}/e/${code}`
       )
       this.showInfo("Link copied to clipboard!")
     },
@@ -702,6 +718,12 @@ export default {
     editEvent() {
       /* Show edit event dialog */
       this.editEventDialog = true
+    },
+    onCodeUpdated(newSlug) {
+      this.$set(this.event, "customSlug", newSlug)
+      // Update the browser URL to use the custom slug if set, otherwise the auto shortId
+      const code = newSlug ?? this.event.shortId ?? this.event._id
+      history.replaceState(null, "", `/e/${code}`)
     },
     /** Refresh event details */
     async refreshEvent() {

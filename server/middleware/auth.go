@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"schej.it/server/db"
 	"schej.it/server/errs"
+	"schej.it/server/models"
 	"schej.it/server/responses"
 )
 
@@ -32,6 +33,24 @@ func AuthRequired() gin.HandlerFunc {
 
 		c.Set("authUser", user)
 
+		c.Next()
+	}
+}
+
+func AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userInterface, exists := c.Get("authUser")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, responses.Error{Error: errs.NotSignedIn})
+			c.Abort()
+			return
+		}
+		user := userInterface.(*models.User)
+		if user.Role != models.RoleAdmin {
+			c.JSON(http.StatusForbidden, responses.Error{Error: errs.NotAdmin})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }

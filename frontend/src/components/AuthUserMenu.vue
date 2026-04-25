@@ -40,6 +40,16 @@
             Settings
           </v-list-item-title>
         </v-list-item>
+        <v-list-item
+          v-if="authUser && authUser.role === 'admin'"
+          id="admin-btn"
+          @click="goToAdmin"
+        >
+          <v-list-item-title class="tw-flex tw-items-center tw-gap-1">
+            <v-icon class="tw-mr-1" small color="black">mdi-shield-crown</v-icon>
+            Admin Panel
+          </v-list-item-title>
+        </v-list-item>
         <v-divider></v-divider>
         <v-list-item id="sign-out-btn" @click="signOut">
           <v-list-item-title class="red--text tw-flex tw-items-center tw-gap-1">
@@ -96,6 +106,9 @@ export default {
     },
     goToSettings() {
       this.$router.replace({ name: "settings" })
+    },
+    goToAdmin() {
+      this.$router.push({ name: "admin" })
     },
     addTeamMember() {
       this.$posthog?.capture("add_team_member_clicked")

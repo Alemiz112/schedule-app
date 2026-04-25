@@ -135,6 +135,7 @@ func main() {
 	routes.InitEvents(apiRouter)
 	routes.InitAnalytics(apiRouter)
 	routes.InitFolders(apiRouter)
+	routes.InitAdmin(apiRouter)
 	slackbot.InitSlackbot(apiRouter)
 
 	frontendDist := os.Getenv("FRONTEND_DIST")
@@ -225,7 +226,7 @@ func noRouteHandler() gin.HandlerFunc {
 			// params["enableStickyFooter"] = true
 
 			if event != nil {
-				title := fmt.Sprintf("%s - Timeful (formerly Schej)", event.Name)
+				title := fmt.Sprintf("%s - Timeful", event.Name)
 				params["title"] = title
 				params["ogTitle"] = title
 
@@ -241,4 +242,3 @@ func noRouteHandler() gin.HandlerFunc {
 		c.HTML(http.StatusOK, "index.html", params)
 	}
 }
-

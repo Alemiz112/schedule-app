@@ -2,6 +2,7 @@ import Vue from "vue"
 import VueRouter from "vue-router"
 import Landing from "@/views/Landing"
 import { get } from "@/utils"
+import store from "@/store"
 
 Vue.use(VueRouter)
 
@@ -21,6 +22,11 @@ const routes = [
     path: "/settings",
     name: "settings",
     component: () => import("@/views/Settings.vue"),
+  },
+  {
+    path: "/admin",
+    name: "admin",
+    component: () => import("@/views/Admin.vue"),
   },
   {
     path: "/e/:eventId",
@@ -91,13 +97,21 @@ const router = new VueRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authRoutes = ["home", "settings"]
+  const authRoutes = ["home", "settings", "admin"]
+  const adminRoutes = ["admin"]
   const noAuthRoutes = ["sign-in", "sign-up"]
   try {
     await get("/auth/status")
 
     if (noAuthRoutes.includes(to.name)) {
       next({ name: "home" })
+    } else if (adminRoutes.includes(to.name)) {
+      const user = store.state.authUser
+      if (!user || user.role !== "admin") {
+        next({ name: "home" })
+      } else {
+        next()
+      }
     } else {
       next()
     }

@@ -7,3 +7,5 @@ deploy_scripts/reboot_log.txt
 *.log
 .env
 .idea
+*.claude/
+server/server.iml

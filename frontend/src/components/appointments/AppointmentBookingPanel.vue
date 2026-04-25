@@ -76,6 +76,22 @@
       </v-form>
     </template>
 
+    <!-- ── Fully booked ───────────────────────────────── -->
+    <div
+      v-else-if="isFullyBooked"
+      class="tw-flex tw-flex-col tw-items-center tw-py-12 tw-text-center"
+    >
+      <v-icon style="font-size: 3rem" color="grey darken-1" class="tw-mb-4">
+        mdi-calendar-remove
+      </v-icon>
+      <div class="tw-mb-2 tw-text-xl tw-font-medium tw-text-black">
+        Fully booked
+      </div>
+      <div class="tw-text-dark-gray">
+        No more appointment slots are available for this event.
+      </div>
+    </div>
+
     <!-- ── Step 1: time grid ───────────────────────────── -->
     <template v-else>
       <!-- Navigation -->
@@ -189,6 +205,10 @@ export default {
   },
 
   computed: {
+    isFullyBooked() {
+      if (!this.event.maxAppointments || this.event.maxAppointments <= 0) return false
+      return this.bookedSlots.length >= this.event.maxAppointments
+    },
     isWeekly() {
       return this.event.type === eventTypes.DOW
     },
@@ -327,8 +347,15 @@ export default {
           notes: this.notes,
         })
         this.submitted = true
-      } catch {
-        this.errorMsg = "Something went wrong. Please try again."
+      } catch (err) {
+        if (err?.parsed?.error === "appointment-limit-reached") {
+          // Refresh booked slots so the UI reflects the full state
+          await this.fetchBookedSlots()
+          this.selectedSlot = null
+          this.errorMsg = ""
+        } else {
+          this.errorMsg = "Something went wrong. Please try again."
+        }
       } finally {
         this.loading = false
       }

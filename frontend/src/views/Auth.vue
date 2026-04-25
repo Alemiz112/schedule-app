@@ -1,7 +1,7 @@
 <template></template>
 
 <script>
-import { get, post, getEventsCreated, deleteEventsCreated } from "@/utils"
+import { get, post } from "@/utils"
 import { mapMutations, mapState } from "vuex"
 import { authTypes, calendarTypes } from "@/constants"
 
@@ -18,7 +18,10 @@ export default {
 
   async created() {
     let { error, code, scope, state } = this.$route.query
-    if (error) this.$router.replace({ name: "home" })
+    if (error) {
+      this.$router.replace({ name: "home" }).catch(() => {})
+      return
+    }
 
     if (state) state = JSON.parse(decodeURIComponent(state))
 
@@ -44,9 +47,7 @@ export default {
           scope: scope ?? state.scope,
           calendarType: state.calendarType,
           timezoneOffset: new Date().getTimezoneOffset(),
-          eventsToLink: getEventsCreated(),
         })
-        deleteEventsCreated()
 
         this.setAuthUser(user)
 
@@ -142,7 +143,12 @@ export default {
         this.$router.replace({ name: "home" })
       }
     } catch (err) {
-      console.error(err)
+      if (err?.parsed?.error === "registration-disabled") {
+        this.$router.replace({ name: "sign-in", query: { registrationDisabled: "1" } })
+      } else {
+        console.error(err)
+        this.$router.replace({ name: "home" })
+      }
     }
   },
 }

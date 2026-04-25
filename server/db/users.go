@@ -35,6 +35,46 @@ func GetUserById(userId string) *models.User {
 }
 
 
+func GetAllUsers() []models.User {
+	cursor, err := UsersCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	var users []models.User
+	if err := cursor.All(context.Background(), &users); err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	return users
+}
+
+func GetUserCount() int64 {
+	count, err := UsersCollection.CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		logger.StdErr.Panicln(err)
+	}
+	return count
+}
+
+func UpdateUserRole(userId string, role models.UserRole) error {
+	objectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	}
+	_, err = UsersCollection.UpdateByID(context.Background(), objectId, bson.M{
+		"$set": bson.M{"role": role},
+	})
+	return err
+}
+
+func DeleteUserById(userId string) error {
+	objectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	}
+	_, err = UsersCollection.DeleteOne(context.Background(), bson.M{"_id": objectId})
+	return err
+}
+
 func GetUserByEmail(email string) *models.User {
 	result := UsersCollection.FindOne(context.Background(), bson.M{
 		"email": email,

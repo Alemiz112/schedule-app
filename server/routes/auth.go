@@ -57,7 +57,6 @@ func signIn(c *gin.Context) {
 		Scope          string              `json:"scope" binding:"required"`
 		CalendarType   models.CalendarType `json:"calendarType" binding:"required"`
 		TimezoneOffset *int                `json:"timezoneOffset" binding:"required"`
-		EventsToLink   []string            `json:"eventsToLink"`
 	}{}
 	if err := c.BindJSON(&payload); err != nil {
 		return
@@ -66,13 +65,8 @@ func signIn(c *gin.Context) {
 	tokens := auth.GetTokensFromAuthCode(payload.Code, payload.Scope, utils.GetOrigin(c), payload.CalendarType)
 
 	user := signInHelper(c, tokens, models.WEB, payload.CalendarType, *payload.TimezoneOffset)
-
-	// Link events to user
-	for _, eventIdString := range payload.EventsToLink {
-		eventId, err := primitive.ObjectIDFromHex(eventIdString)
-		if err == nil {
-			db.EventsCollection.UpdateOne(context.Background(), bson.M{"_id": eventId, "ownerId": nil}, bson.M{"$set": bson.M{"ownerId": user.Id}})
-		}
+	if c.IsAborted() {
+		return
 	}
 
 	c.JSON(http.StatusOK, user)
@@ -114,6 +108,9 @@ func signInMobile(c *gin.Context) {
 		payload.CalendarType,
 		payload.TimezoneOffset,
 	)
+	if c.IsAborted() {
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{})
 }
@@ -177,6 +174,16 @@ func signInHelper(c *gin.Context, token auth.TokenResponse, tokenOrigin models.T
 	findResult := db.UsersCollection.FindOne(context.Background(), bson.M{"email": email})
 	// If user doesn't exist, create a new user
 	if findResult.Err() == mongo.ErrNoDocuments {
+		// Check if registration is allowed
+		settings := db.GetInstanceSettings()
+		if !settings.AllowRegistration {
+			c.JSON(http.StatusForbidden, responses.Error{Error: errs.RegistrationDisabled})
+			c.Abort()
+			return models.User{}
+		}
+
+		isFirstUser := db.GetUserCount() == 0
+
 		// Fetch subcalendars
 		subCalendars, err := calendar.GetCalendarProvider(calendarAccount).GetCalendarList()
 		if err == nil {
@@ -195,6 +202,11 @@ func signInHelper(c *gin.Context, token auth.TokenResponse, tokenOrigin models.T
 		}
 
 		userId = res.InsertedID.(primitive.ObjectID)
+
+		if isFirstUser {
+			db.UpdateUserRole(userId.Hex(), models.RoleAdmin)
+			userData.Role = models.RoleAdmin
+		}
 
 		// slackbot.SendTextMessage(fmt.Sprintf(":wave: %s %s (%s) has joined schej.it!", firstName, lastName, email))
 	} else {
@@ -322,6 +334,15 @@ func sendOtp(c *gin.Context) {
 
 	email := strings.ToLower(strings.TrimSpace(payload.Email))
 
+	// Block registration if disabled and user doesn't exist
+	if db.GetUserByEmail(email) == nil {
+		settings := db.GetInstanceSettings()
+		if !settings.AllowRegistration {
+			c.JSON(http.StatusForbidden, responses.Error{Error: errs.RegistrationDisabled})
+			return
+		}
+	}
+
 	// Delete any existing OTP codes for this email
 	db.OtpCodesCollection.DeleteMany(context.Background(), bson.M{"email": email})
 
@@ -410,6 +431,15 @@ func verifyOtp(c *gin.Context) {
 	findResult := db.UsersCollection.FindOne(context.Background(), bson.M{"email": email})
 
 	if findResult.Err() == mongo.ErrNoDocuments {
+		// Belt-and-suspenders: block registration if disabled
+		settings := db.GetInstanceSettings()
+		if !settings.AllowRegistration {
+			c.JSON(http.StatusForbidden, responses.Error{Error: errs.RegistrationDisabled})
+			return
+		}
+
+		isFirstUser := db.GetUserCount() == 0
+
 		firstName := strings.TrimSpace(payload.FirstName)
 		lastName := strings.TrimSpace(payload.LastName)
 
@@ -426,6 +456,10 @@ func verifyOtp(c *gin.Context) {
 			logger.StdErr.Panicln(err)
 		}
 		userId = res.InsertedID.(primitive.ObjectID)
+
+		if isFirstUser {
+			db.UpdateUserRole(userId.Hex(), models.RoleAdmin)
+		}
 
 		if exists, listmonkUserId := listmonk.DoesUserExist(email); exists {
 			listmonk.AddUserToListmonk(email, firstName, lastName, "", listmonkUserId, true)

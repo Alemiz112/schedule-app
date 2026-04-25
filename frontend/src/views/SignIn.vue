@@ -223,9 +223,28 @@
             </div>
           </v-card-text>
         </template>
+
+        <!-- Registration disabled -->
+        <template v-if="step === 'disabled'">
+          <v-card-text class="tw-flex tw-flex-col tw-items-center tw-px-6 tw-py-8 tw-text-center">
+            <v-icon style="font-size: 3rem" color="grey darken-1" class="tw-mb-4">
+              mdi-account-cancel
+            </v-icon>
+            <div class="tw-mb-2 tw-text-xl tw-font-medium tw-text-black">
+              Registration is disabled
+            </div>
+            <div class="tw-mb-6 tw-text-sm tw-text-dark-gray">
+              New user registration is not available at this time. Please contact the administrator.
+            </div>
+            <v-btn text color="primary" @click="step = 'select'">
+              Back to sign in
+            </v-btn>
+          </v-card-text>
+        </template>
       </v-card>
 
       <div
+        v-if="step !== 'disabled'"
         class="tw-mt-4 tw-rounded-xl tw-bg-light-gray-stroke/50 tw-py-4 tw-text-center tw-text-sm tw-text-dark-gray"
       >
         <template v-if="isSignUp">
@@ -291,6 +310,12 @@ export default {
     }
   },
 
+  mounted() {
+    if (this.$route.query.registrationDisabled) {
+      this.step = "disabled"
+    }
+  },
+
   methods: {
     ...mapMutations(["setAuthUser"]),
     signIn(provider) {
@@ -348,7 +373,11 @@ export default {
         this.otpCode = ""
         this.otpError = ""
       } catch (err) {
-        this.otpError = "Failed to send code. Please try again."
+        if (err?.parsed?.error === "registration-disabled") {
+          this.step = "disabled"
+        } else {
+          this.otpError = "Failed to send code. Please try again."
+        }
       } finally {
         this.sending = false
       }
@@ -394,7 +423,9 @@ export default {
         await this.handlePostAuthRedirect(user)
       } catch (err) {
         const errorCode = err?.parsed?.error
-        if (errorCode === "otp-expired") {
+        if (errorCode === "registration-disabled") {
+          this.step = "disabled"
+        } else if (errorCode === "otp-expired") {
           this.otpError = "Code has expired. Please request a new one."
         } else if (errorCode === "otp-too-many-attempts") {
           this.otpError = "Too many attempts. Please request a new code."

@@ -58,11 +58,9 @@ func GetEventByShortId(shortEventId string) *models.Event {
 		},
 	})
 	if result.Err() == mongo.ErrNoDocuments {
-		// Event does not exist!
 		return nil
 	}
 
-	// Decode result
 	var event models.Event
 	if err := result.Decode(&event); err != nil {
 		logger.StdErr.Panicln(err)
@@ -71,13 +69,40 @@ func GetEventByShortId(shortEventId string) *models.Event {
 	return &event
 }
 
-// Returns an event by either its _id or shortId
-func GetEventByEitherId(id string) *models.Event {
-	if len(id) <= 10 {
-		return GetEventByShortId(id)
+// Returns an event by shortId or customSlug
+func GetEventByCode(code string) *models.Event {
+	result := EventsCollection.FindOne(context.Background(), bson.M{
+		"$and": bson.A{
+			bson.M{"$or": bson.A{
+				bson.M{"shortId": code},
+				bson.M{"customSlug": code},
+			}},
+			bson.M{"$or": bson.A{
+				bson.M{"isDeleted": bson.M{"$exists": false}},
+				bson.M{"isDeleted": bson.M{"$eq": false}},
+			}},
+		},
+	})
+	if result.Err() == mongo.ErrNoDocuments {
+		return nil
 	}
 
-	return GetEventById(id)
+	var event models.Event
+	if err := result.Decode(&event); err != nil {
+		logger.StdErr.Panicln(err)
+	}
+
+	return &event
+}
+
+// Returns an event by _id, shortId, or customSlug
+func GetEventByEitherId(id string) *models.Event {
+	// Valid 24-char hex ObjectID → look up by _id
+	if _, err := primitive.ObjectIDFromHex(id); err == nil {
+		return GetEventById(id)
+	}
+	// Otherwise try shortId or customSlug
+	return GetEventByCode(id)
 }
 
 func GetEventResponses(eventId string) []models.EventResponse {

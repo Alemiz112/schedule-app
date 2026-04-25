@@ -53,6 +53,20 @@
           :folder-id="folderId"
           @signIn="$emit('signIn')"
         />
+        <NewEvent
+          v-else-if="tab === 'appointment'"
+          ref="appointment"
+          :key="`appointment-${value}`"
+          :is-appointment="true"
+          :event="event"
+          :edit="edit"
+          @input="handleDialogInput"
+          :is-dialog-open="value"
+          :contactsPayload="this.type == 'appointment' ? contactsPayload : {}"
+          :show-help="!_noTabs"
+          :folder-id="folderId"
+          @signIn="$emit('signIn')"
+        />
         <NewGroup
           v-else-if="tab === 'group'"
           ref="group"
@@ -129,11 +143,7 @@ export default {
       return isPhone(this.$vuetify)
     },
     _noTabs() {
-      if (!this.groupsEnabled) {
-        return true
-      } else {
-        return this.noTabs
-      }
+      return this.noTabs
     },
   },
 
@@ -158,6 +168,7 @@ export default {
       handler() {
         this.tabs = [
           { title: "Event", type: "event" },
+          { title: "Appointment", type: "appointment" },
           { title: "Sign up form", type: "signup" },
         ]
         if (this.groupsEnabled) {
@@ -168,7 +179,10 @@ export default {
     signUpFormEnabled: {
       immediate: true,
       handler() {
-        this.tabs = [{ title: "Event", type: "event" }]
+        this.tabs = [
+          { title: "Event", type: "event" },
+          { title: "Appointment", type: "appointment" },
+        ]
         if (this.signUpFormEnabled) {
           this.tabs.push({ title: "Sign up form", type: "signup" })
         }

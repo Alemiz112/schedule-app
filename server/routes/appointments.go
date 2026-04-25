@@ -46,6 +46,14 @@ func createAppointmentRequest(c *gin.Context) {
 		return
 	}
 
+	// Enforce max appointments limit
+	if event.MaxAppointments != nil && *event.MaxAppointments > 0 {
+		if db.GetActiveAppointmentCount(event.Id.Hex()) >= *event.MaxAppointments {
+			c.JSON(http.StatusConflict, responses.Error{Error: errs.AppointmentLimitReached})
+			return
+		}
+	}
+
 	req := models.AppointmentRequest{
 		Id:        primitive.NewObjectID(),
 		EventId:   event.Id,
