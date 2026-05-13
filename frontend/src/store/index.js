@@ -117,7 +117,7 @@ export default new Vuex.Store({
     events: [],
     folders: [],
 
-    outlookEnabled: !!process.env.VUE_APP_MICROSOFT_CLIENT_ID,
+    outlookEnabled: !!window._env_?.VUE_APP_MICROSOFT_CLIENT_ID,
 
     featureFlagsLoaded: false,
 

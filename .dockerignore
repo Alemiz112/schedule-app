@@ -1,0 +1,5 @@
+frontend/public/config.js
+frontend/node_modules
+.env
+.keys
+*.log

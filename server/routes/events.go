@@ -25,7 +25,7 @@ import (
 	"schej.it/server/responses"
 	"schej.it/server/services/calendar"
 	"schej.it/server/services/gcloud"
-	"schej.it/server/services/listmonk"
+	"schej.it/server/services/email"
 	"schej.it/server/utils"
 )
 
@@ -172,14 +172,13 @@ func createEvent(c *gin.Context) {
 			ownerName := user.FirstName
 
 			// Add attendees to attendees array and send invite emails
-			availabilityGroupInviteEmailId := 9
-			for _, email := range payload.Attendees {
-				listmonk.SendEmailAddSubscriberIfNotExist(email, availabilityGroupInviteEmailId, bson.M{
+			for _, attendeeEmail := range payload.Attendees {
+				email.SendAndAddSubscriber(attendeeEmail, email.Templates.GroupInvite, map[string]any{
 					"ownerName": ownerName,
 					"groupName": event.Name,
 					"groupUrl":  fmt.Sprintf("%s/g/%s", utils.GetBaseUrl(), event.GetId()),
 				}, false)
-				attendees = append(attendees, models.Attendee{Email: email, Declined: utils.FalsePtr(), EventId: event.Id})
+				attendees = append(attendees, models.Attendee{Email: attendeeEmail, Declined: utils.FalsePtr(), EventId: event.Id})
 			}
 
 		}
@@ -380,8 +379,7 @@ func editEvent(c *gin.Context) {
 
 		for _, addedEmail := range added {
 			// Send invite email
-			availabilityGroupInviteEmailId := 9
-			listmonk.SendEmailAddSubscriberIfNotExist(addedEmail.Value, availabilityGroupInviteEmailId, bson.M{
+			email.SendAndAddSubscriber(addedEmail.Value, email.Templates.GroupInvite, map[string]any{
 				"ownerName": ownerName,
 				"groupName": event.Name,
 				"groupUrl":  fmt.Sprintf("%s/g/%s", utils.GetBaseUrl(), event.GetId()),
@@ -396,10 +394,9 @@ func editEvent(c *gin.Context) {
 		// Send group update emails
 		if len(added) > 0 {
 			emails := utils.Map(added, func(a utils.ElementWithIndex[string]) string { return a.Value })
-			addedAttendeeEmailId := 11
 
 			for _, keptEmail := range kept {
-				listmonk.SendEmailAddSubscriberIfNotExist(keptEmail.Value, addedAttendeeEmailId, bson.M{
+				email.SendAndAddSubscriber(keptEmail.Value, email.Templates.AddedAttendee, map[string]any{
 					"ownerName": ownerName,
 					"groupName": event.Name,
 					"groupUrl":  fmt.Sprintf("%s/g/%s", utils.GetBaseUrl(), event.GetId()),
@@ -975,16 +972,14 @@ func updateEventResponse(c *gin.Context) {
 			}
 
 			if event.Type == models.GROUP {
-				someoneRespondedEmailId := 13
-				listmonk.SendEmail(creator.Email, someoneRespondedEmailId, bson.M{
+				email.Send(creator.Email, email.Templates.SomeoneRespondedGroup, map[string]any{
 					"groupName":      event.Name,
 					"ownerName":      creator.FirstName,
 					"respondentName": respondentName,
 					"groupUrl":       fmt.Sprintf("%s/g/%s", utils.GetBaseUrl(), event.GetId()),
 				})
 			} else {
-				someoneRespondedEmailId := 10
-				listmonk.SendEmail(creator.Email, someoneRespondedEmailId, bson.M{
+				email.Send(creator.Email, email.Templates.SomeoneRespondedEvent, map[string]any{
 					"eventName":      event.Name,
 					"ownerName":      creator.FirstName,
 					"respondentName": respondentName,
@@ -1014,12 +1009,12 @@ func updateEventResponse(c *gin.Context) {
 				return
 			}
 
-			sendEmailAfterXResponsesEmailId := 14
-			listmonk.SendEmail(creator.Email, sendEmailAfterXResponsesEmailId, bson.M{
+			numResponses := len(eventResponses) + 1 // We add 1 because eventResponses is the old event responses before the current user is added
+			email.Send(creator.Email, email.Templates.XResponses, map[string]any{
 				"eventName":    event.Name,
 				"ownerName":    creator.FirstName,
 				"eventUrl":     fmt.Sprintf("%s/e/%s", utils.GetBaseUrl(), event.GetId()),
-				"numResponses": len(eventResponses) + 1, // We add 1 because eventResponses is the old event responses before the current user is added
+				"numResponses": numResponses,
 			})
 		}()
 	}
@@ -1248,8 +1243,7 @@ func userResponded(c *gin.Context) {
 		eventUrl := fmt.Sprintf("%s/e/%s", baseUrl, eventId)
 
 		// Send email
-		everyoneRespondedEmailTemplateId := 8
-		listmonk.SendEmail(owner.Email, everyoneRespondedEmailTemplateId, bson.M{
+		email.Send(owner.Email, email.Templates.EveryoneResponded, map[string]any{
 			"eventName": event.Name,
 			"eventUrl":  eventUrl,
 		})

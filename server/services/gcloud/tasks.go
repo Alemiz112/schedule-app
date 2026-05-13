@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"schej.it/server/logger"
-	"schej.it/server/services/listmonk"
+	emailsvc "schej.it/server/services/email"
 	"schej.it/server/utils"
 )
 
@@ -54,12 +54,9 @@ func CreateEmailTask(email string, ownerName string, eventName string, eventId s
 	listmonkPassword := os.Getenv("LISTMONK_PASSWORD")
 	basicAuthString := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", listmonkUsername, listmonkPassword)))
 
-	// Find if subscriber exists in listmonk
-	subscriberExists, _ := listmonk.DoesUserExist(email)
-
-	// If subscriber doesn't exist, add subscriber to listmonk
-	if !subscriberExists {
-		listmonk.AddUserToListmonk(email, "", "", "", nil, false)
+	// Ensure recipient is a subscriber (Listmonk only, no-op for other providers)
+	if exists, _ := emailsvc.SubscriberExists(email); !exists {
+		emailsvc.AddSubscriber(email, "", "", "", nil, false)
 	}
 
 	// Get email template ids

@@ -1,4 +1,5 @@
 *.exe
+frontend/public/config.js
 server/logs.log
 .DS_Store
 server/server

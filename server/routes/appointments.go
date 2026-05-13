@@ -13,6 +13,7 @@ import (
 	"schej.it/server/models"
 	"schej.it/server/responses"
 	"schej.it/server/services/calendar"
+	emailsvc "schej.it/server/services/email"
 	"schej.it/server/utils"
 )
 
@@ -29,7 +30,7 @@ func createAppointmentRequest(c *gin.Context) {
 		StartDate primitive.DateTime `json:"startDate" binding:"required"`
 		EndDate   primitive.DateTime `json:"endDate" binding:"required"`
 		Name      string             `json:"name" binding:"required"`
-		Email     string             `json:"email"`
+		Email     string             `json:"email" binding:"required"`
 		Notes     string             `json:"notes"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
@@ -74,22 +75,31 @@ func createAppointmentRequest(c *gin.Context) {
 		return
 	}
 
+	// Notify owner of new request
+	owner := db.GetUserById(event.OwnerId.Hex())
+	if owner != nil && owner.Email != "" {
+		eventUrl := fmt.Sprintf("%s/e/%s", utils.GetBaseUrl(), event.GetId())
+		emailsvc.Send(owner.Email, emailsvc.Templates.AppointmentRequested, appointmentEmailData(&req, event, eventUrl))
+	}
+
 	// Auto-approve if enabled and owner has calendar auto-add configured
 	if utils.Coalesce(event.AutoApproveAppointments) {
-		owner := db.GetUserById(event.OwnerId.Hex())
 		if owner != nil && owner.CalendarOptions != nil && owner.CalendarOptions.AddToCalendar {
 			db.UpdateAppointmentRequestStatus(req.Id.Hex(), models.AppointmentApproved)
 			req.Status = models.AppointmentApproved
+
+			eventUrl := fmt.Sprintf("%s/e/%s", utils.GetBaseUrl(), event.GetId())
+
+			if req.Email != "" {
+				emailsvc.Send(req.Email, emailsvc.Templates.AppointmentApproved, appointmentEmailData(&req, event, eventUrl))
+
+			}
 
 			calendarKey := owner.CalendarOptions.DefaultCalendarKey
 			if calendarKey == "" && owner.PrimaryAccountKey != nil {
 				calendarKey = *owner.PrimaryAccountKey
 			}
 			if calendarKey != "" {
-				eventId := event.Id.Hex()
-				if event.ShortId != nil && *event.ShortId != "" {
-					eventId = *event.ShortId
-				}
 				attendeeEmails := []string{}
 				if req.Email != "" {
 					attendeeEmails = append(attendeeEmails, req.Email)
@@ -99,7 +109,7 @@ func createAppointmentRequest(c *gin.Context) {
 					Title:          fmt.Sprintf("%s with %s", event.Name, req.Name),
 					StartDate:      req.StartDate.Time(),
 					EndDate:        req.EndDate.Time(),
-					Description:    fmt.Sprintf("Booked via Timeful: https://timeful.app/e/%s", eventId),
+					Description:    fmt.Sprintf("Booked via Timeful: %s", eventUrl),
 					AttendeeEmails: attendeeEmails,
 				})
 			}
@@ -166,6 +176,11 @@ func approveAppointmentRequest(c *gin.Context) {
 	db.UpdateAppointmentRequestStatus(req.Id.Hex(), models.AppointmentApproved)
 	req.Status = models.AppointmentApproved
 
+	eventUrl := fmt.Sprintf("%s/e/%s", utils.GetBaseUrl(), event.GetId())
+	if req.Email != "" {
+		emailsvc.Send(req.Email, emailsvc.Templates.AppointmentApproved, appointmentEmailData(req, event, eventUrl))
+	}
+
 	calendarEventCreated := false
 	if user.CalendarOptions != nil && user.CalendarOptions.AddToCalendar {
 		calendarKey := user.CalendarOptions.DefaultCalendarKey
@@ -173,10 +188,6 @@ func approveAppointmentRequest(c *gin.Context) {
 			calendarKey = *user.PrimaryAccountKey
 		}
 		if calendarKey != "" {
-			eventId := event.Id.Hex()
-			if event.ShortId != nil && *event.ShortId != "" {
-				eventId = *event.ShortId
-			}
 			attendeeEmails := []string{}
 			if req.Email != "" {
 				attendeeEmails = append(attendeeEmails, req.Email)
@@ -186,7 +197,7 @@ func approveAppointmentRequest(c *gin.Context) {
 				Title:          fmt.Sprintf("%s with %s", event.Name, req.Name),
 				StartDate:      req.StartDate.Time(),
 				EndDate:        req.EndDate.Time(),
-				Description:    fmt.Sprintf("Booked via Timeful: https://timeful.app/e/%s", eventId),
+				Description:    fmt.Sprintf("Booked via Timeful: %s", eventUrl),
 				AttendeeEmails: attendeeEmails,
 			})
 			if err == nil {
@@ -285,4 +296,18 @@ func getAppointmentRequestWithOwnerCheck(c *gin.Context) (*models.AppointmentReq
 	}
 
 	return req, event
+}
+
+func appointmentEmailData(req *models.AppointmentRequest, event *models.Event, eventUrl string) map[string]any {
+	loc := time.Now().Location()
+	start := req.StartDate.Time().In(loc)
+	end := req.EndDate.Time().In(loc)
+	return map[string]any{
+		"requesterName": req.Name,
+		"eventName":     event.Name,
+		"date":          start.Format("January 2, 2006"),
+		"startTime":     start.Format("3:04 PM"),
+		"endTime":       end.Format("3:04 PM"),
+		"eventUrl":      eventUrl,
+	}
 }

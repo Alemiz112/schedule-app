@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +24,7 @@ import (
 	"schej.it/server/responses"
 	"schej.it/server/services/auth"
 	"schej.it/server/services/calendar"
-	"schej.it/server/services/listmonk"
+	emailsvc "schej.it/server/services/email"
 	"schej.it/server/services/microsoftgraph"
 	"schej.it/server/utils"
 )
@@ -239,6 +238,9 @@ func signInHelper(c *gin.Context, token auth.TokenResponse, tokenOrigin models.T
 
 		// Set calendar account
 		userData.CalendarAccounts = user.CalendarAccounts
+		if userData.CalendarAccounts == nil {
+			userData.CalendarAccounts = make(map[string]models.CalendarAccount)
+		}
 		userData.CalendarAccounts[calendarAccountKey] = calendarAccount
 
 		// Update user if exists
@@ -252,10 +254,10 @@ func signInHelper(c *gin.Context, token auth.TokenResponse, tokenOrigin models.T
 		}
 	}
 
-	if exists, userId := listmonk.DoesUserExist(email); exists {
-		listmonk.AddUserToListmonk(email, firstName, lastName, picture, userId, true)
+	if exists, userId := emailsvc.SubscriberExists(email); exists {
+		emailsvc.AddSubscriber(email, firstName, lastName, picture, userId, true)
 	} else {
-		listmonk.AddUserToListmonk(email, firstName, lastName, picture, nil, true)
+		emailsvc.AddSubscriber(email, firstName, lastName, picture, nil, true)
 	}
 
 	// Set session variables
@@ -364,14 +366,9 @@ func sendOtp(c *gin.Context) {
 		logger.StdErr.Panicln(err)
 	}
 
-	otpTemplateId, err := strconv.Atoi(os.Getenv("LISTMONK_OTP_EMAIL_TEMPLATE_ID"))
-	if err != nil {
-		logger.StdErr.Panicln("LISTMONK_OTP_EMAIL_TEMPLATE_ID is not set or invalid")
-	}
-
-	listmonk.SendEmailAddSubscriberIfNotExist(email, otpTemplateId, bson.M{
+	emailsvc.SendAndAddSubscriber(email, emailsvc.Templates.OTP, map[string]any{
 		"code": code,
-	}, false, "Timeful <noreply@timeful.app>")
+	}, false)
 
 	c.JSON(http.StatusOK, gin.H{})
 }
@@ -466,10 +463,10 @@ func verifyOtp(c *gin.Context) {
 			db.UpdateUserRole(userId.Hex(), models.RoleAdmin)
 		}
 
-		if exists, listmonkUserId := listmonk.DoesUserExist(email); exists {
-			listmonk.AddUserToListmonk(email, firstName, lastName, "", listmonkUserId, true)
+		if exists, subscriberID := emailsvc.SubscriberExists(email); exists {
+			emailsvc.AddSubscriber(email, firstName, lastName, "", subscriberID, true)
 		} else {
-			listmonk.AddUserToListmonk(email, firstName, lastName, "", nil, true)
+			emailsvc.AddSubscriber(email, firstName, lastName, "", nil, true)
 		}
 	} else {
 		var user models.User

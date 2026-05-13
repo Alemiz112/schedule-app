@@ -46,9 +46,10 @@
         />
         <v-text-field
           v-model="email"
-          label="Email (optional)"
+          label="Email"
           outlined
           dense
+          :rules="[(v) => !!v || 'Email is required', (v) => /.+@.+\..+/.test(v) || 'Enter a valid email']"
           class="tw-mb-1"
         />
         <v-textarea
@@ -176,6 +177,7 @@
 <script>
 import { get, post, dateToDowDate } from "@/utils"
 import { eventTypes } from "@/constants"
+import { mapState } from "vuex"
 import dayjs from "dayjs"
 
 const HOUR_HEIGHT = 60
@@ -202,9 +204,14 @@ export default {
 
   mounted() {
     this.fetchBookedSlots()
+    if (this.authUser) {
+      this.name = `${this.authUser.firstName} ${this.authUser.lastName}`.trim()
+      this.email = this.authUser.email ?? ""
+    }
   },
 
   computed: {
+    ...mapState(["authUser"]),
     isFullyBooked() {
       if (!this.event.maxAppointments || this.event.maxAppointments <= 0) return false
       return this.bookedSlots.length >= this.event.maxAppointments
