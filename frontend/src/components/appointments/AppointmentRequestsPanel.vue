@@ -161,9 +161,9 @@ export default {
       try {
         this.requests = await get(
           `/events/${this.event._id}/appointment-requests`
-        )
+        ) ?? []
       } catch {
-        // Silently fail — user will see empty state
+        this.requests = []
       } finally {
         this.loading = false
         this.refreshing = false

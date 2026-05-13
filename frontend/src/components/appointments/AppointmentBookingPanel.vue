@@ -1,5 +1,24 @@
 <template>
   <div class="tw-select-none tw-py-4">
+    <!-- ── Event header ───────────────────────────────── -->
+    <div class="tw-mb-4 tw-px-0">
+      <div class="tw-text-xl tw-font-medium tw-text-black sm:tw-text-3xl">
+        {{ event.name }}
+      </div>
+      <div
+        v-if="event.description"
+        class="tw-mt-2 tw-rounded-md tw-border tw-border-light-gray-stroke tw-bg-light-gray tw-p-2 tw-text-xs tw-text-very-dark-gray sm:tw-text-sm"
+      >
+        <div
+          v-for="(line, i) in event.description.split('\n')"
+          :key="i"
+          class="tw-min-h-6 tw-leading-6"
+        >
+          {{ line }}
+        </div>
+      </div>
+    </div>
+
     <!-- ── Success ──────────────────────────────────────── -->
     <div
       v-if="submitted"

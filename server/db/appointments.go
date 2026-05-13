@@ -47,7 +47,7 @@ func GetAppointmentRequestsByEvent(eventId string, statusFilter *models.Appointm
 		logger.StdErr.Panicln(err)
 	}
 
-	var reqs []models.AppointmentRequest
+	reqs := make([]models.AppointmentRequest, 0)
 	if err := cursor.All(context.Background(), &reqs); err != nil {
 		logger.StdErr.Panicln(err)
 	}

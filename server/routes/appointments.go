@@ -346,5 +346,6 @@ func appointmentEmailData(req *models.AppointmentRequest, event *models.Event, e
 		"startTime":     start.Format("3:04 PM"),
 		"endTime":       end.Format("3:04 PM"),
 		"eventUrl":      eventUrl,
+		"notes":         req.Notes,
 	}
 }
