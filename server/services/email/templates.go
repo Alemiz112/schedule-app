@@ -35,15 +35,21 @@ func (t Template) listmonkTemplateID() int {
 // Listmonk template IDs are read from env vars at send time (with hardcoded defaults
 // matching the values that were previously inline in the route handlers).
 var Templates = struct {
-	OTP                   Template
-	GroupInvite           Template
-	AddedAttendee         Template
-	SomeoneRespondedEvent Template
-	SomeoneRespondedGroup Template
-	XResponses            Template
-	EveryoneResponded     Template
-	AppointmentRequested  Template
-	AppointmentApproved   Template
+	OTP                          Template
+	GroupInvite                  Template
+	AddedAttendee                Template
+	SomeoneRespondedEvent        Template
+	SomeoneRespondedGroup        Template
+	XResponses                   Template
+	EveryoneResponded            Template
+	AppointmentRequested         Template
+	AppointmentApproved          Template
+	ReminderInitial              Template
+	ReminderSecond               Template
+	ReminderFinal                Template
+	AppointmentReminderInitial   Template
+	AppointmentReminderSecond    Template
+	AppointmentReminderFinal     Template
 }{
 	OTP: Template{
 		listmonkIDEnv: "LISTMONK_OTP_EMAIL_TEMPLATE_ID",
@@ -96,5 +102,38 @@ var Templates = struct {
 		listmonkIDEnv: "LISTMONK_APPOINTMENT_APPROVED_TEMPLATE_ID",
 		Subject:       "Your appointment has been confirmed",
 		Body:          "Hi {{.requesterName}},\n\nYour appointment for \"{{.eventName}}\" on {{.date}} from {{.startTime}} to {{.endTime}} has been confirmed.\n\n{{.eventUrl}}",
+	},
+	ReminderInitial: Template{
+		listmonkIDEnv:     "LISTMONK_INITIAL_EMAIL_REMINDER_ID",
+		listmonkIDDefault: 0,
+		Subject:           "{{.ownerName}} invited you to fill out {{.eventName}}",
+		Body:              "{{.ownerName}} has invited you to fill out your availability for \"{{.eventName}}\".\n\nFill it out here: {{.eventUrl}}\n\nOnce you've responded, let us know: {{.finishedUrl}}",
+	},
+	ReminderSecond: Template{
+		listmonkIDEnv:     "LISTMONK_SECOND_EMAIL_REMINDER_ID",
+		listmonkIDDefault: 0,
+		Subject:           "Reminder: fill out {{.eventName}}",
+		Body:              "Just a reminder that {{.ownerName}} is still waiting for your availability for \"{{.eventName}}\".\n\nFill it out here: {{.eventUrl}}\n\nOnce you've responded, let us know: {{.finishedUrl}}",
+	},
+	ReminderFinal: Template{
+		listmonkIDEnv:     "LISTMONK_FINAL_EMAIL_REMINDER_ID",
+		listmonkIDDefault: 0,
+		Subject:           "Final reminder: fill out {{.eventName}}",
+		Body:              "Last chance! {{.ownerName}} is waiting for your availability for \"{{.eventName}}\".\n\nFill it out here: {{.eventUrl}}\n\nOnce you've responded, let us know: {{.finishedUrl}}",
+	},
+	AppointmentReminderInitial: Template{
+		listmonkIDEnv: "LISTMONK_APPOINTMENT_REMINDER_INITIAL_ID",
+		Subject:       "{{.ownerName}} invited you to book an appointment for {{.eventName}}",
+		Body:          "{{.ownerName}} has invited you to book an appointment for \"{{.eventName}}\".\n\nPick your slot here: {{.eventUrl}}",
+	},
+	AppointmentReminderSecond: Template{
+		listmonkIDEnv: "LISTMONK_APPOINTMENT_REMINDER_SECOND_ID",
+		Subject:       "Reminder: book your appointment for {{.eventName}}",
+		Body:          "Just a reminder that {{.ownerName}} is waiting for you to book an appointment for \"{{.eventName}}\".\n\nPick your slot here: {{.eventUrl}}",
+	},
+	AppointmentReminderFinal: Template{
+		listmonkIDEnv: "LISTMONK_APPOINTMENT_REMINDER_FINAL_ID",
+		Subject:       "Final reminder: book your appointment for {{.eventName}}",
+		Body:          "Last chance to book your appointment for \"{{.eventName}}\" with {{.ownerName}}.\n\nPick your slot here: {{.eventUrl}}",
 	},
 }

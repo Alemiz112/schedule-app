@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"schej.it/server/db"
 	"schej.it/server/errs"
@@ -73,6 +74,12 @@ func createAppointmentRequest(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, responses.Error{Error: "insert-failed"})
 		return
+	}
+
+	// Cancel any pending reminder emails for this booker and persist
+	if req.Email != "" {
+		cancelRemindersForEmail(event, req.Email)
+		db.EventsCollection.UpdateByID(context.Background(), event.Id, bson.M{"$set": event})
 	}
 
 	// Notify owner of new request

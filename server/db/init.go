@@ -24,6 +24,7 @@ var FolderEventsCollection *mongo.Collection
 var OtpCodesCollection *mongo.Collection
 var AppointmentRequestsCollection *mongo.Collection
 var InstanceSettingsCollection *mongo.Collection
+var ScheduledEmailsCollection *mongo.Collection
 
 func Init() func() {
 	// Establish mongodb connection
@@ -53,6 +54,7 @@ func Init() func() {
 	OtpCodesCollection = Db.Collection("otpCodes")
 	AppointmentRequestsCollection = Db.Collection("appointmentRequests")
 	InstanceSettingsCollection = Db.Collection("instanceSettings")
+	ScheduledEmailsCollection = Db.Collection("scheduledEmails")
 
 	// Create TTL index so expired OTP docs are auto-deleted
 	otpIndexModel := mongo.IndexModel{

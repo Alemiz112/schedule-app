@@ -24,8 +24,8 @@ import (
 	"schej.it/server/models"
 	"schej.it/server/responses"
 	"schej.it/server/services/calendar"
-	"schej.it/server/services/gcloud"
 	"schej.it/server/services/email"
+	"schej.it/server/services/scheduler"
 	"schej.it/server/utils"
 )
 
@@ -152,7 +152,7 @@ func createEvent(c *gin.Context) {
 		// Schedule email reminders for each of the remindees' emails
 		remindees := make([]models.Remindee, 0)
 		for _, email := range payload.Remindees {
-			taskIds := gcloud.CreateEmailTask(email, ownerName, payload.Name, event.GetId())
+			taskIds := scheduler.CreateEmailReminders(email, ownerName, payload.Name, event.GetId(), utils.Coalesce(payload.IsAppointment))
 			remindees = append(remindees, models.Remindee{
 				Email:     email,
 				TaskIds:   taskIds,
@@ -315,7 +315,7 @@ func editEvent(c *gin.Context) {
 
 		for _, addedEmail := range added {
 			// Schedule email tasks
-			taskIds := gcloud.CreateEmailTask(addedEmail.Value, ownerName, event.Name, event.GetId())
+			taskIds := scheduler.CreateEmailReminders(addedEmail.Value, ownerName, event.Name, event.GetId(), utils.Coalesce(event.IsAppointment))
 			updatedRemindees = append(updatedRemindees, models.Remindee{
 				Email:     addedEmail.Value,
 				TaskIds:   taskIds,
@@ -326,7 +326,7 @@ func editEvent(c *gin.Context) {
 		for _, removedEmail := range removed {
 			// Delete email tasks
 			for _, taskId := range origRemindees[removedEmail.Index].TaskIds {
-				gcloud.DeleteEmailTask(taskId)
+				scheduler.CancelEmail(taskId)
 			}
 		}
 
@@ -1174,6 +1174,25 @@ func renameUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// cancelRemindersForEmail cancels pending reminder emails for the given address
+// and marks that remindee as responded in the event. The caller is responsible
+// for persisting the updated event to the database.
+func cancelRemindersForEmail(event *models.Event, email string) {
+	if event.Remindees == nil {
+		return
+	}
+	index := utils.Find(*event.Remindees, func(r models.Remindee) bool {
+		return r.Email == email
+	})
+	if index == -1 {
+		return
+	}
+	for _, taskId := range (*event.Remindees)[index].TaskIds {
+		scheduler.CancelEmail(taskId)
+	}
+	(*event.Remindees)[index].Responded = utils.TruePtr()
+}
+
 // @Summary Mark the user as having responded to this event
 // @Tags events
 // @Accept json
@@ -1215,12 +1234,7 @@ func userResponded(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
-	(*event.Remindees)[index].Responded = utils.TruePtr()
-
-	// Delete the reminder email tasks
-	for _, taskId := range (*event.Remindees)[index].TaskIds {
-		gcloud.DeleteEmailTask(taskId)
-	}
+	cancelRemindersForEmail(event, payload.Email)
 
 	// Update event in database
 	db.EventsCollection.UpdateByID(context.Background(), event.Id, bson.M{
@@ -1500,7 +1514,7 @@ func deleteEvent(c *gin.Context) {
 		for _, remindee := range *event.Remindees {
 			// Delete email tasks
 			for _, taskId := range remindee.TaskIds {
-				gcloud.DeleteEmailTask(taskId)
+				scheduler.CancelEmail(taskId)
 			}
 		}
 	}

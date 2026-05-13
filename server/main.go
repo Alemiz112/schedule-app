@@ -22,7 +22,7 @@ import (
 	"schej.it/server/db"
 	"schej.it/server/logger"
 	"schej.it/server/routes"
-	"schej.it/server/services/gcloud"
+	"schej.it/server/services/scheduler"
 	"schej.it/server/slackbot"
 	"schej.it/server/utils"
 
@@ -119,9 +119,8 @@ func main() {
 	closeConnection := db.Init()
 	defer closeConnection()
 
-	// Init google cloud stuff
-	closeTasks := gcloud.InitTasks()
-	defer closeTasks()
+	// Start email scheduler
+	scheduler.Start()
 
 	// Session
 	store := cookie.NewStore([]byte(os.Getenv("SESSION_SECRET")))
