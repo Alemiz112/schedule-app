@@ -4,6 +4,7 @@ package routes
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -503,6 +504,11 @@ func addAppleCalendarAccount(c *gin.Context) {
 // @Success 200
 // @Router /user/add-outlook-calendar-account [post]
 func addOutlookCalendarAccount(c *gin.Context) {
+	if os.Getenv("MICROSOFT_CLIENT_ID") == "" {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "outlook-not-configured"})
+		return
+	}
+
 	payload := struct {
 		Code  string `json:"code" binding:"required"`
 		Scope string `json:"scope" binding:"required"`

@@ -6,7 +6,7 @@
     </div>
 
     <div v-if="writableAccounts.length === 0" class="tw-text-xs tw-text-dark-gray">
-      Connect a Google or Outlook calendar to use this feature.
+      Connect a {{ outlookEnabled ? 'Google or Outlook' : 'Google' }} calendar to use this feature.
     </div>
 
     <template v-else>
@@ -55,6 +55,7 @@
 
 <script>
 import { patch } from "@/utils"
+import { mapState } from "vuex"
 
 export default {
   name: "AddToCalendarSwitch",
@@ -67,9 +68,10 @@ export default {
   },
 
   computed: {
+    ...mapState(["outlookEnabled"]),
     writableAccounts() {
       return Object.entries(this.calendarAccounts || {})
-        .filter(([, acc]) => acc.calendarType === "google" || acc.calendarType === "outlook")
+        .filter(([, acc]) => acc.calendarType === "google" || (this.outlookEnabled && acc.calendarType === "outlook"))
         .map(([key, acc]) => ({
           key,
           label: `${acc.email} (${acc.calendarType === "google" ? "Google" : "Outlook"})`,

@@ -62,6 +62,11 @@ func signIn(c *gin.Context) {
 		return
 	}
 
+	if payload.CalendarType == models.OutlookCalendarType && os.Getenv("MICROSOFT_CLIENT_ID") == "" {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "outlook-not-configured"})
+		return
+	}
+
 	tokens := auth.GetTokensFromAuthCode(payload.Code, payload.Scope, utils.GetOrigin(c), payload.CalendarType)
 
 	user := signInHelper(c, tokens, models.WEB, payload.CalendarType, *payload.TimezoneOffset)

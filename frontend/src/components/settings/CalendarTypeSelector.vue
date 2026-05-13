@@ -33,7 +33,7 @@
                 <v-spacer />
               </div>
             </v-btn>
-            <v-btn block @click="$emit('addOutlookCalendar')">
+            <v-btn v-if="outlookEnabled" block @click="$emit('addOutlookCalendar')">
               <div class="tw-flex tw-w-full tw-items-center tw-gap-2">
                 <v-img
                   class="tw-flex-initial"
@@ -83,6 +83,7 @@
 <script>
 import AppleCredentials from "@/components/calendar_permission_dialogs/AppleCredentials.vue"
 import ICSCredentials from "@/components/calendar_permission_dialogs/ICSCredentials.vue";
+import { mapState } from "vuex"
 
 export default {
   name: "CalendarTypeSelector",
@@ -97,6 +98,10 @@ export default {
       type: Boolean,
       default: true,
     },
+  },
+
+  computed: {
+    ...mapState(["outlookEnabled"]),
   },
 
   data() {

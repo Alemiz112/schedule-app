@@ -42,7 +42,7 @@
                 <v-spacer />
               </div>
             </v-btn>
-            <v-btn block @click="autofillWithOutlook" class="tw-bg-white">
+            <v-btn v-if="outlookEnabled" block @click="autofillWithOutlook" class="tw-bg-white">
               <div class="tw-flex tw-w-full tw-items-center tw-gap-2">
                 <v-img
                   class="tw-flex-initial"
@@ -152,7 +152,7 @@ export default {
   },
 
   computed: {
-    ...mapState(["authUser"]),
+    ...mapState(["authUser", "outlookEnabled"]),
     isPhone() {
       return isPhone(this.$vuetify)
     },

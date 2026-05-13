@@ -29,6 +29,7 @@
               </div>
             </v-btn>
             <v-btn
+              v-if="outlookEnabled"
               block
               @click="signIn(calendarTypes.OUTLOOK)"
               class="tw-bg-white"
@@ -200,6 +201,7 @@
 <script>
 import { calendarTypes } from "@/constants"
 import { post } from "@/utils"
+import { mapState } from "vuex"
 
 export default {
   name: "SignInDialog",
@@ -223,6 +225,10 @@ export default {
       resendTimer: null,
     }
   },
+  computed: {
+    ...mapState(["outlookEnabled"]),
+  },
+
   methods: {
     signIn(provider) {
       this.$emit("signIn", provider)

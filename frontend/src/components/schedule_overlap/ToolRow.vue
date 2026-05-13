@@ -129,7 +129,7 @@
                   <v-list-item-title>Google Calendar</v-list-item-title>
                 </v-list-item-content>
               </v-list-item>
-              <v-list-item @click="(e) => $emit('confirmScheduleEvent', false)">
+              <v-list-item v-if="outlookEnabled" @click="(e) => $emit('confirmScheduleEvent', false)">
                 <v-img
                   src="@/assets/outlook_logo.svg"
                   class="tw-mr-2 tw-flex-none"
@@ -204,7 +204,7 @@ export default {
   methods: {},
 
   computed: {
-    ...mapState(["authUser"]),
+    ...mapState(["authUser", "outlookEnabled"]),
     isPhone() {
       return isPhone(this.$vuetify)
     },

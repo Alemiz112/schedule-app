@@ -50,6 +50,7 @@
                 </div>
               </v-btn>
               <v-btn
+                v-if="outlookEnabled"
                 block
                 @click="signIn(calendarTypes.OUTLOOK)"
                 class="tw-bg-white"
@@ -271,7 +272,7 @@
 <script>
 import { authTypes, calendarTypes } from "@/constants"
 import { post, signInGoogle, signInOutlook } from "@/utils"
-import { mapMutations } from "vuex"
+import { mapMutations, mapState } from "vuex"
 import Logo from "@/components/Logo.vue"
 
 export default {
@@ -314,6 +315,10 @@ export default {
     if (this.$route.query.registrationDisabled) {
       this.step = "disabled"
     }
+  },
+
+  computed: {
+    ...mapState(["outlookEnabled"]),
   },
 
   methods: {
