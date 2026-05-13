@@ -15,12 +15,16 @@ export const signInGoogle = ({
   let scope = "openid email profile "
   if (requestCalendarPermission) {
     scope +=
-      "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly "
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events "
   }
   if (requestContactsPermission) {
     scope +=
       "https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/directory.readonly "
   }
+
+
+  console.log(scope)
+
   scope = encodeURIComponent(scope)
 
   let stateString = ""
