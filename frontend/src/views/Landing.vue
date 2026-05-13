@@ -318,7 +318,6 @@ export default {
     },
     openHowItWorksDialog() {
       this.showHowItWorksDialog = true
-      this.$posthog.capture("how_it_works_clicked")
     },
     onPlay() {
       setTimeout(() => {

@@ -589,23 +589,6 @@ export default {
           : -1,
         collectEmails: this.collectEmails,
         startOnMonday: this.startOnMonday,
-        creatorPosthogId: this.$posthog?.get_distinct_id(),
-      }
-      const posthogPayload = {
-        eventName: this.name,
-        eventDuration: duration,
-        eventDates: JSON.stringify(dates),
-        eventNotificationsEnabled: this.notificationsEnabled,
-        eventBlindAvailabilityEnabled: this.blindAvailabilityEnabled,
-        eventDaysOnly: this.daysOnly,
-        eventRemindees: this.emails,
-        eventType: type,
-        eventIsSignUpForm: true,
-        eventSendEmailAfterXResponses: this.sendEmailAfterXResponsesEnabled
-          ? parseInt(this.sendEmailAfterXResponses)
-          : -1,
-        eventCollectEmails: this.collectEmails,
-        eventStartOnMonday: this.startOnMonday,
       }
 
       if (!this.edit) {
@@ -623,9 +606,6 @@ export default {
 
             this.$emit("input", false)
             this.reset()
-
-            posthogPayload.eventId = eventId
-            this.$posthog?.capture("Sign up form created", posthogPayload)
           })
           .catch((err) => {
             this.showError(
@@ -640,9 +620,6 @@ export default {
         if (this.event) {
           put(`/events/${this.event._id}`, payload)
             .then(() => {
-              posthogPayload.eventId = this.event._id
-              this.$posthog?.capture("Sign up form edited", posthogPayload)
-
               this.$emit("input", false)
               this.reset()
               window.location.reload()

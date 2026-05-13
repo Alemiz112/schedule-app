@@ -312,14 +312,6 @@ export default {
           this.getEvents()
           this.$refs.menu.save() // NOTE: Not sure why but without this line, the menu persists to the next event.
 
-          this.$posthog?.capture("Event removed", {
-            eventId: this.event._id,
-            eventName: this.event.name,
-            eventDuration: this.event.duration,
-            eventDates: this.event.dates,
-            eventNotificationsEnabled: this.event.notificationsEnabled,
-            eventType: this.event.type,
-          })
         })
         .catch((err) => {
           this.showError(
@@ -336,16 +328,6 @@ export default {
         .then(({ eventId, shortId }) => {
           this.getEvents()
           this.$refs.menu.save() // NOTE: Not sure why but without this line, the menu persists to the next event.
-
-          this.$posthog?.capture("Event duplicated", {
-            eventId: eventId,
-            eventName: this.duplicateDialogOptions.name,
-            eventDuration: this.event.duration,
-            eventDates: this.event.dates,
-            eventNotificationsEnabled: this.event.notificationsEnabled,
-            eventType: this.event.type,
-            copyAvailability: this.duplicateDialogOptions.copyAvailability,
-          })
         })
         .catch((err) => {
           this.showError(

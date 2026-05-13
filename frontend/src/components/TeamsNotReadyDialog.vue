@@ -44,7 +44,6 @@ export default {
   },
   methods: {
     bookCall() {
-      this.$posthog?.capture("book_call_for_organization_plan_clicked")
       window.open(
         "https://cal.com/jonathan-liu/timeful-organization-plan",
         "_blank"

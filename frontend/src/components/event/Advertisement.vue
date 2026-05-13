@@ -51,9 +51,6 @@ export default {
 
   methods: {
     navigateToAd() {
-      this.$posthog?.capture("Clicked ad", {
-        link: this.link,
-      })
       window.open(this.link, "_blank")
     },
     isEduEmail(email) {

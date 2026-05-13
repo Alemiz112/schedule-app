@@ -77,9 +77,6 @@ func createEvent(c *gin.Context) {
 		HasSpecificTimes *bool                `json:"hasSpecificTimes"`
 		Times            []primitive.DateTime `json:"times"`
 
-		// PostHog ID for the event creator
-		CreatorPosthogId *string `json:"creatorPosthogId"`
-
 		// Only for sign up form events
 		IsSignUpForm *bool                 `json:"isSignUpForm"`
 		SignUpBlocks *[]models.SignUpBlock `json:"signUpBlocks"`
@@ -117,7 +114,6 @@ func createEvent(c *gin.Context) {
 	event := models.Event{
 		Id:                       primitive.NewObjectID(),
 		OwnerId:                  ownerId,
-		CreatorPosthogId:         payload.CreatorPosthogId,
 		Name:                     payload.Name,
 		Duration:                 payload.Duration,
 		Dates:                    payload.Dates,
@@ -1778,7 +1774,6 @@ func importEvent(c *gin.Context) {
 	remoteEvent.When2meetHref = nil
 	remoteEvent.ScheduledEvent = nil
 	remoteEvent.CalendarEventId = ""
-	remoteEvent.CreatorPosthogId = nil
 	remoteEvent.SignUpResponses = make(map[string]*models.SignUpResponse)
 
 	_, err = db.EventsCollection.InsertOne(context.Background(), remoteEvent)

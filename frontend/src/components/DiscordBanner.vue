@@ -58,13 +58,8 @@ export default {
     dismiss() {
       this.show = false
       localStorage.setItem(this.localStorageKey, "true")
-      this.$posthog?.capture("discord_banner_dismissed")
     },
-    trackDiscordClick() {
-      this.$posthog?.capture("discord_banner_clicked", {
-        discordUrl: this.discordUrl,
-      })
-    },
+    trackDiscordClick() {},
   },
 
   watch: {

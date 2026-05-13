@@ -42,7 +42,6 @@
           text
           href="https://forms.gle/A96i4TTWeKgH3P1W6"
           target="_blank"
-          @click="trackFeedbackClick"
         >
           Give feedback
         </v-btn>
@@ -302,7 +301,6 @@ export default {
       "setAuthUser",
       "setSignUpFormEnabled",
       "setPricingPageConversion",
-      "setFeatureFlagsLoaded",
     ]),
     ...mapActions([
       "getEvents",
@@ -312,9 +310,6 @@ export default {
       this.scrollY = window.scrollY
     },
     _createNew(eventOnly = false) {
-      this.$posthog.capture("create_new_button_clicked", {
-        eventOnly: eventOnly,
-      })
       this.openNewDialog({ eventOnly })
     },
     signIn() {
@@ -366,27 +361,9 @@ export default {
     },
     _emailSignIn(user) {
       this.setAuthUser(user)
-      this.$posthog?.identify(user._id, {
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      })
       if (this.$route.name === "landing") {
         this.$router.push({ name: "home" })
       }
-    },
-    setFeatureFlags() {
-      if (!this.$posthog) return
-
-      // this.setSignUpFormEnabled(this.$posthog.isFeatureEnabled("sign-up-form"))
-      // this.setPricingPageConversion(
-      // this.$posthog.getFeatureFlag("pricing-page-conversion")
-      // )
-      // )
-      this.setFeatureFlagsLoaded(true)
-    },
-    trackFeedbackClick() {
-      this.$posthog.capture("give_feedback_button_clicked")
     },
   },
 
@@ -394,12 +371,6 @@ export default {
     await get("/user/profile")
       .then((authUser) => {
         this.setAuthUser(authUser)
-
-        this.$posthog?.identify(authUser._id, {
-          email: authUser.email,
-          firstName: authUser.firstName,
-          lastName: authUser.lastName,
-        })
       })
       .catch(() => {
         this.setAuthUser(null)
@@ -428,10 +399,6 @@ export default {
       immediate: true,
       async handler() {
         const originalHref = window.location.href
-        if (this.$route.name) {
-          this.$posthog?.capture("$pageview")
-        }
-
         // Check for poster query parameter
         if (this.$route.query.p) {
           let location = null
@@ -445,21 +412,6 @@ export default {
             url: originalHref,
             location,
           })
-        }
-      },
-    },
-    authUser: {
-      immediate: true,
-      handler() {
-        if (this.$posthog) {
-          this.setFeatureFlags()
-          // Check feature flags (only if posthog is enabled)
-          // this.$posthog.setPersonPropertiesForFlags({
-          //   email: this.authUser?.email,
-          // })
-          // this.$posthog.onFeatureFlags(() => {
-          //   this.setFeatureFlags()
-          // })
         }
       },
     },

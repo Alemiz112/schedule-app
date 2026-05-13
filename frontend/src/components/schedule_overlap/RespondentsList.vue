@@ -651,10 +651,6 @@ export default {
         this.$emit("refreshEvent")
         this.showInfo("Availability successfully deleted!")
 
-        this.$posthog?.capture("Deleted availability of another user", {
-          eventId: this.eventId,
-          userId: user._id,
-        })
       } catch (e) {
         console.error(e)
         this.showError(
@@ -769,10 +765,6 @@ export default {
       document.body.removeChild(downloadLink)
     },
     trackExportCsvClick() {
-      this.$posthog.capture("export_csv_clicked", {
-        eventId: this.eventId,
-        numRespondents: this.respondents.length,
-      })
     },
     setDesktopMaxHeight() {
       const el = this.$refs.scrollableSection

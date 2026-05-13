@@ -2856,40 +2856,6 @@ export default {
 
       await post(`/events/${this.event._id}/response`, payload)
 
-      // Update analytics
-      const addedIfNeededTimes = this.ifNeededArray.length > 0
-      if (this.authUser) {
-        if (this.authUser._id in this.parsedResponses) {
-          this.$posthog?.capture(`Edited ${type}`, {
-            eventId: this.event._id,
-            addedIfNeededTimes,
-          })
-        } else {
-          this.$posthog?.capture(`Added ${type}`, {
-            eventId: this.event._id,
-            addedIfNeededTimes,
-            // bufferTime: this.bufferTime,
-            bufferTime: this.bufferTime.time,
-            bufferTimeActive: this.bufferTime.enabled,
-            workingHoursEnabled: this.workingHours.enabled,
-            workingHoursStartTime: this.workingHours.startTime,
-            workingHoursEndTime: this.workingHours.endTime,
-          })
-        }
-      } else {
-        if (guestPayload.name in this.parsedResponses) {
-          this.$posthog?.capture(`Edited ${type} as guest`, {
-            eventId: this.event._id,
-            addedIfNeededTimes,
-          })
-        } else {
-          this.$posthog?.capture(`Added ${type} as guest`, {
-            eventId: this.event._id,
-            addedIfNeededTimes,
-          })
-        }
-      }
-
       this.refreshEvent()
       this.unsavedChanges = false
     },
@@ -2946,17 +2912,9 @@ export default {
         payload.guest = false
         payload.userId = this.authUser._id
 
-        this.$posthog?.capture("Deleted availability", {
-          eventId: this.event._id,
-        })
       } else {
         payload.guest = true
         payload.name = name
-
-        this.$posthog?.capture("Deleted availability as guest", {
-          eventId: this.event._id,
-          name,
-        })
       }
       await _delete(`/events/${this.event._id}/response`, payload)
       this.availability = new Set()
@@ -3535,7 +3493,6 @@ export default {
     // -----------------------------------
     scheduleEvent() {
       this.state = this.states.SCHEDULE_EVENT
-      this.$posthog.capture("schedule_event_button_clicked")
     },
     cancelScheduleEvent() {
       this.state = this.defaultState
@@ -3544,7 +3501,6 @@ export default {
     /** Create event in user's default calendar or open external calendar link */
     async confirmScheduleEvent(googleCalendar = true) {
       if (!this.curScheduledEvent) return
-      this.$posthog.capture("schedule_event_confirmed")
       // Get start date, and end date from the area that the user has dragged out
       const { col, row, numRows } = this.curScheduledEvent
       let startDate = this.getDateFromRowCol(row, col)
@@ -3988,9 +3944,6 @@ export default {
     },
     updateOverlayAvailability(val) {
       this.overlayAvailability = !!val
-      this.$posthog.capture("overlay_availability_toggled", {
-        enabled: !!val,
-      })
     },
     //#endregion
 

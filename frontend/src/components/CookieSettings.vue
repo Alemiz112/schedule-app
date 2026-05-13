@@ -37,7 +37,7 @@
           class="tw-text-gray-600 tw-mt-4 tw-pl-0 tw-text-sm tw-leading-relaxed md:tw-mt-0 md:tw-pl-8"
         >
           <p>
-            <strong>Services used:</strong> PostHog Analytics, Google Analytics
+            <strong>Services used:</strong> Google Analytics
             (via Google Tag Manager)
           </p>
           <p>

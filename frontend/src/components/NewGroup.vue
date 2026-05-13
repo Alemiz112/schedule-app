@@ -340,7 +340,6 @@ export default {
           attendees,
           type,
           startOnMonday,
-          creatorPosthogId: this.$posthog?.get_distinct_id(),
         })
           .then(async ({ eventId, shortId }) => {
             if (this.authUser) {
@@ -354,16 +353,6 @@ export default {
               },
             })
             this.$emit("input", false)
-
-            this.$posthog?.capture("Availability group created", {
-              eventId: eventId,
-              eventName: name,
-              eventDuration: duration,
-              eventDates: JSON.stringify(dates),
-              eventAttendees: attendees,
-              eventType: type,
-              eventStartOnMonday: startOnMonday,
-            })
           })
           .catch((err) => {
             this.showError(
@@ -385,15 +374,6 @@ export default {
           startOnMonday,
         })
           .then(() => {
-            this.$posthog?.capture("Availability group edited", {
-              eventId: this.event._id,
-              eventName: name,
-              eventDuration: duration,
-              eventDates: JSON.stringify(dates),
-              eventAttendees: attendees,
-              eventType: type,
-              eventStartOnMonday: startOnMonday,
-            })
 
             this.$emit("input", false)
             this.reset()
