@@ -298,6 +298,43 @@ func getAppointmentRequestWithOwnerCheck(c *gin.Context) (*models.AppointmentReq
 	return req, event
 }
 
+// @Summary Get the event owner's available time slots from their event response (public)
+// @Tags events
+// @Produce json
+// @Param eventId path string true "Event ID"
+// @Success 200 {array} string
+// @Router /events/{eventId}/appointment-requests/owner-availability [get]
+func getOwnerAvailability(c *gin.Context) {
+	eventId := c.Param("eventId")
+	event := db.GetEventByEitherId(eventId)
+	if event == nil {
+		c.JSON(http.StatusNotFound, responses.Error{Error: errs.EventNotFound})
+		return
+	}
+
+	if !utils.Coalesce(event.IsAppointment) {
+		c.JSON(http.StatusBadRequest, responses.Error{Error: errs.EventNotAppointment})
+		return
+	}
+
+	// Find the owner's response among all event responses
+	ownerIdHex := event.OwnerId.Hex()
+	for _, er := range db.GetEventResponses(event.Id.Hex()) {
+		if er.UserId == ownerIdHex && er.Response != nil {
+			// Return availability slots (nil response means owner hasn't responded yet)
+			slots := er.Response.Availability
+			if slots == nil {
+				slots = []primitive.DateTime{}
+			}
+			c.JSON(http.StatusOK, slots)
+			return
+		}
+	}
+
+	// Owner hasn't submitted availability — return nil so the frontend shows all slots open
+	c.JSON(http.StatusOK, nil)
+}
+
 func appointmentEmailData(req *models.AppointmentRequest, event *models.Event, eventUrl string) map[string]any {
 	loc := time.Now().Location()
 	start := req.StartDate.Time().In(loc)

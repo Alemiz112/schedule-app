@@ -161,7 +161,7 @@
               class="timeslot tw-w-full tw-border-b tw-border-r tw-border-white"
               :style="{ height: TIMESLOT_HEIGHT + 'px' }"
               :class="cellClass(col, row)"
-              @click="!row.isPast && !isSlotBooked(col, row) && pickSlot(col, row)"
+              @click="!row.isPast && !isSlotBooked(col, row) && !isSlotOwnerUnavailable(col, row) && pickSlot(col, row)"
             ></div>
           </div>
         </div>
@@ -192,6 +192,7 @@ export default {
   data: () => ({
     page: 0,       // weekOffset for DOW, page index for specific dates
     bookedSlots: [], // [{startDate, endDate}] — pending or approved bookings
+    ownerAvailability: null, // [ISO string] — owner's available slot starts; null means no response yet (show all)
     selectedSlot: null,
     name: "",
     email: "",
@@ -204,6 +205,7 @@ export default {
 
   mounted() {
     this.fetchBookedSlots()
+    this.fetchOwnerAvailability()
     if (this.authUser) {
       this.name = `${this.authUser.firstName} ${this.authUser.lastName}`.trim()
       this.email = this.authUser.email ?? ""
@@ -302,6 +304,20 @@ export default {
       }
     },
 
+    async fetchOwnerAvailability() {
+      try {
+        const result = await get(
+          `/events/${this.event._id}/appointment-requests/owner-availability`
+        )
+        // null means owner hasn't responded yet — show all slots open
+        if (Array.isArray(result)) {
+          this.ownerAvailability = new Set(result.map((d) => new Date(d).getTime()))
+        }
+      } catch {
+        // Non-fatal — fall back to showing all slots open
+      }
+    },
+
     isSlotBooked(col, row) {
       const { start } = this.slotDates(col, row)
       return this.bookedSlots.some(
@@ -309,11 +325,17 @@ export default {
       )
     },
 
+    isSlotOwnerUnavailable(col, row) {
+      if (this.ownerAvailability === null) return false // no response yet — treat all as open
+      const { start } = this.slotDates(col, row)
+      return !this.ownerAvailability.has(start.getTime())
+    },
+
     cellClass(col, row) {
-      if (row.isPast || this.isSlotBooked(col, row)) {
+      if (row.isPast || this.isSlotBooked(col, row) || this.isSlotOwnerUnavailable(col, row)) {
         return "tw-cursor-default tw-bg-off-white"
       }
-      return "tw-cursor-pointer tw-bg-ligher-green hover:tw-bg-green hover:tw-opacity-70 tw-transition-colors tw-duration-75"
+      return "tw-cursor-pointer tw-bg-green tw-opacity-40 hover:tw-opacity-70 tw-transition-opacity tw-duration-75"
     },
 
     prevPage() {

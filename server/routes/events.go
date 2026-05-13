@@ -52,6 +52,7 @@ func InitEvents(router *gin.RouterGroup) {
 	// Appointment routes
 	eventRouter.POST("/:eventId/appointment-requests", createAppointmentRequest)
 	eventRouter.GET("/:eventId/appointment-requests/booked", getBookedAppointmentSlots)
+	eventRouter.GET("/:eventId/appointment-requests/owner-availability", getOwnerAvailability)
 	eventRouter.GET("/:eventId/appointment-requests", middleware.AuthRequired(), getAppointmentRequests)
 	eventRouter.POST("/:eventId/appointment-requests/:requestId/approve", middleware.AuthRequired(), approveAppointmentRequest)
 	eventRouter.POST("/:eventId/appointment-requests/:requestId/reject", middleware.AuthRequired(), rejectAppointmentRequest)
