@@ -214,6 +214,28 @@
           />
         </div>
 
+        <!-- Auto-approve appointments (appointment events only) -->
+        <div v-if="isAppointment" class="tw-flex tw-flex-col tw-gap-1">
+          <v-checkbox
+            v-model="autoApproveAppointments"
+            :disabled="!canAutoApprove"
+            hide-details
+            class="tw-mt-0"
+          >
+            <template v-slot:label>
+              <span class="tw-text-sm tw-text-very-dark-gray">Auto-approve appointments</span>
+            </template>
+          </v-checkbox>
+          <div class="tw-pl-8 tw-text-xs tw-text-dark-gray">
+            <template v-if="canAutoApprove">
+              Requests will be instantly approved and added to your calendar.
+            </template>
+            <template v-else>
+              Enable "Add to calendar" in your calendar settings to use this feature.
+            </template>
+          </div>
+        </div>
+
         <v-checkbox
           v-if="!guestEvent"
           v-model="notificationsEnabled"
@@ -289,7 +311,7 @@
                 ></v-select>
               </div>
               <v-checkbox
-                v-if="!guestEvent"
+                v-if="!guestEvent && !isAppointment"
                 v-model="collectEmails"
                 hide-details
               >
@@ -465,6 +487,7 @@ export default {
     notificationsEnabled: true,
 
     maxAppointments: null,
+    autoApproveAppointments: false,
 
     daysOnly: false,
     daysOnlyOptions: Object.freeze([
@@ -526,6 +549,9 @@ export default {
 
   computed: {
     ...mapState(["authUser", "daysOnlyEnabled"]),
+    canAutoApprove() {
+      return !!this.authUser?.calendarOptions?.addToCalendar
+    },
     nameRules() {
       return [(v) => !!v || "Event name is required"]
     },
@@ -586,6 +612,7 @@ export default {
       this.selectedDaysOfWeek = []
       this.notificationsEnabled = true
       this.maxAppointments = null
+      this.autoApproveAppointments = false
       this.daysOnly = false
       this.selectedDateOption = "Specific dates"
       this.emails = []
@@ -666,6 +693,7 @@ export default {
         dates: dates,
         isAppointment: this.isAppointment,
         maxAppointments: this.maxAppointments ? parseInt(this.maxAppointments) : null,
+        autoApproveAppointments: this.isAppointment ? this.autoApproveAppointments : false,
         hasSpecificTimes: this.specificTimesEnabled,
         notificationsEnabled: !this.authUser
           ? false
@@ -677,7 +705,7 @@ export default {
         sendEmailAfterXResponses: this.sendEmailAfterXResponsesEnabled
           ? parseInt(this.sendEmailAfterXResponses)
           : -1,
-        collectEmails: this.collectEmails,
+        collectEmails: this.isAppointment ? true : this.collectEmails,
         startOnMonday: this.startOnMonday,
         timeIncrement: this.timeIncrement,
         creatorPosthogId: this.$posthog?.get_distinct_id(),
@@ -817,6 +845,7 @@ export default {
         this.blindAvailabilityEnabled = this.event.blindAvailabilityEnabled
         this.daysOnly = this.event.daysOnly
         this.maxAppointments = this.event.maxAppointments ?? null
+        this.autoApproveAppointments = this.event.autoApproveAppointments ?? false
         this.specificTimesEnabled = this.event.hasSpecificTimes
         this.startOnMonday = this.event.startOnMonday
         this.collectEmails = this.event.collectEmails

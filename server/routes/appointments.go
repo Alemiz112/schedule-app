@@ -74,6 +74,38 @@ func createAppointmentRequest(c *gin.Context) {
 		return
 	}
 
+	// Auto-approve if enabled and owner has calendar auto-add configured
+	if utils.Coalesce(event.AutoApproveAppointments) {
+		owner := db.GetUserById(event.OwnerId.Hex())
+		if owner != nil && owner.CalendarOptions != nil && owner.CalendarOptions.AddToCalendar {
+			db.UpdateAppointmentRequestStatus(req.Id.Hex(), models.AppointmentApproved)
+			req.Status = models.AppointmentApproved
+
+			calendarKey := owner.CalendarOptions.DefaultCalendarKey
+			if calendarKey == "" && owner.PrimaryAccountKey != nil {
+				calendarKey = *owner.PrimaryAccountKey
+			}
+			if calendarKey != "" {
+				eventId := event.Id.Hex()
+				if event.ShortId != nil && *event.ShortId != "" {
+					eventId = *event.ShortId
+				}
+				attendeeEmails := []string{}
+				if req.Email != "" {
+					attendeeEmails = append(attendeeEmails, req.Email)
+				}
+				calendarId := owner.CalendarOptions.DefaultCalendarId
+				calendar.CreateEventForUser(owner, calendarKey, calendarId, calendar.CreateCalendarEventInput{
+					Title:          fmt.Sprintf("%s with %s", event.Name, req.Name),
+					StartDate:      req.StartDate.Time(),
+					EndDate:        req.EndDate.Time(),
+					Description:    fmt.Sprintf("Booked via Timeful: https://timeful.app/e/%s", eventId),
+					AttendeeEmails: attendeeEmails,
+				})
+			}
+		}
+	}
+
 	c.JSON(http.StatusCreated, req)
 }
 

@@ -98,8 +98,9 @@ func createEvent(c *gin.Context) {
 		Attendees []string `json:"attendees"`
 
 		// Whether this event is an appointment
-		IsAppointment   *bool `json:"isAppointment"`
-		MaxAppointments *int  `json:"maxAppointments"`
+		IsAppointment           *bool `json:"isAppointment"`
+		MaxAppointments         *int  `json:"maxAppointments"`
+		AutoApproveAppointments *bool `json:"autoApproveAppointments"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		fmt.Println(err)
@@ -129,11 +130,12 @@ func createEvent(c *gin.Context) {
 		DaysOnly:                 payload.DaysOnly,
 		SendEmailAfterXResponses: payload.SendEmailAfterXResponses,
 		When2meetHref:            payload.When2meetHref,
-		CollectEmails:            payload.CollectEmails,
+		CollectEmails:            collectEmailsForCreate(payload.CollectEmails, payload.IsAppointment),
 		TimeIncrement:            payload.TimeIncrement,
 		Type:                     payload.Type,
 		IsAppointment:            payload.IsAppointment,
 		MaxAppointments:          payload.MaxAppointments,
+		AutoApproveAppointments:  payload.AutoApproveAppointments,
 		SignUpResponses:          make(map[string]*models.SignUpResponse),
 		NumResponses:             &numResponses,
 	}
@@ -238,8 +240,9 @@ func editEvent(c *gin.Context) {
 		Attendees []string `json:"attendees"`
 
 		// Whether this event is an appointment
-		IsAppointment   *bool `json:"isAppointment"`
-		MaxAppointments *int  `json:"maxAppointments"`
+		IsAppointment           *bool `json:"isAppointment"`
+		MaxAppointments         *int  `json:"maxAppointments"`
+		AutoApproveAppointments *bool `json:"autoApproveAppointments"`
 	}{}
 	if err := c.Bind(&payload); err != nil {
 		logger.StdErr.Println(err)
@@ -285,10 +288,11 @@ func editEvent(c *gin.Context) {
 	event.BlindAvailabilityEnabled = payload.BlindAvailabilityEnabled
 	event.DaysOnly = payload.DaysOnly
 	event.SendEmailAfterXResponses = payload.SendEmailAfterXResponses
-	event.CollectEmails = payload.CollectEmails
+	event.CollectEmails = collectEmailsForCreate(payload.CollectEmails, payload.IsAppointment)
 	event.Type = payload.Type
 	event.IsAppointment = payload.IsAppointment
 	event.MaxAppointments = payload.MaxAppointments
+	event.AutoApproveAppointments = payload.AutoApproveAppointments
 
 	// Update remindees
 	if event.Type == models.DOW || event.Type == models.SPECIFIC_DATES {
@@ -1911,6 +1915,12 @@ func updateCustomSlug(c *gin.Context) {
 }
 
 // Helper function to get all responses as a map (for backward compatibility)
+// collectEmailsForCreate returns true if collectEmails is set or the event is an appointment.
+func collectEmailsForCreate(collectEmails *bool, isAppointment *bool) *bool {
+	v := utils.Coalesce(collectEmails) || utils.Coalesce(isAppointment)
+	return &v
+}
+
 func getResponsesMap(responses []models.EventResponse) map[string]*models.Response {
 	result := make(map[string]*models.Response)
 	for _, resp := range responses {

@@ -106,6 +106,9 @@ type Event struct {
 
 	// Maximum number of pending+approved appointments allowed (0 or nil = unlimited)
 	MaxAppointments *int `json:"maxAppointments" bson:"maxAppointments,omitempty"`
+
+	// Automatically approve appointment requests and add to calendar when possible
+	AutoApproveAppointments *bool `json:"autoApproveAppointments" bson:"autoApproveAppointments,omitempty"`
 }
 
 func (e *Event) GetId() string {
