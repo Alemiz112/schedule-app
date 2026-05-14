@@ -43,6 +43,26 @@
         </div>
       </div>
 
+      <!-- Appearance Section -->
+      <div class="tw-flex tw-flex-col tw-gap-5">
+        <div
+          class="tw-text-xl tw-font-medium tw-text-dark-green sm:tw-text-2xl"
+        >
+          Appearance
+        </div>
+        <div class="tw-flex tw-items-center tw-justify-between tw-max-w-sm">
+          <div class="tw-font-medium">Dark mode</div>
+          <v-switch
+            :input-value="darkMode"
+            inset
+            hide-details
+            color="primary"
+            class="tw-mt-0 tw-pt-0"
+            @change="setDarkMode"
+          />
+        </div>
+      </div>
+
       <!-- Calendar Access Section -->
       <div class="tw-flex tw-flex-col tw-gap-5">
         <div
@@ -189,7 +209,7 @@
 </template>
 
 <script>
-import { mapState, mapActions } from "vuex"
+import { mapState, mapActions, mapMutations } from "vuex"
 import { _delete, get, patch, isPhone } from "@/utils"
 import CalendarAccounts from "@/components/settings/CalendarAccounts.vue"
 import AddToCalendarSwitch from "@/components/schedule_overlap/AddToCalendarSwitch.vue"
@@ -232,7 +252,7 @@ export default {
   }),
 
   computed: {
-    ...mapState(["authUser"]),
+    ...mapState(["authUser", "darkMode"]),
     nameUnsavedChanges() {
       return (
         this.firstName !== this.authUser.firstName ||
@@ -261,6 +281,7 @@ export default {
 
   methods: {
     ...mapActions(["showError", "refreshAuthUser"]),
+    ...mapMutations(["setDarkMode"]),
     deleteAccount() {
       _delete(`/user`)
         .then(() => {

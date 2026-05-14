@@ -11,34 +11,33 @@
           <v-spacer />
 
           <LandingPageHeader>
-<!--            <v-btn text @click="openHowItWorksDialog">How it works</v-btn>-->
-<!--            <v-btn text href="/blog">Blog</v-btn>-->
+            <!--            <v-btn text @click="openHowItWorksDialog">How it works</v-btn>-->
+            <!--            <v-btn text href="/blog">Blog</v-btn>-->
             <div v-if="authUser" class="tw-ml-2">
               <AuthUserMenu />
             </div>
             <v-btn v-else text :to="{ name: 'sign-in' }">Sign in</v-btn>
           </LandingPageHeader>
         </div>
-
       </div>
 
       <div class="tw-flex tw-flex-col tw-items-center">
         <div
           class="tw-mb-6 tw-flex tw-max-w-[26rem] tw-flex-col tw-items-center sm:tw-w-[35rem] sm:tw-max-w-none"
         >
-          <div
-            class="tw-mb-4 tw-flex tw-select-none tw-items-center tw-rounded-full tw-border tw-border-light-gray-stroke tw-bg-white/70 tw-px-2.5 tw-py-1.5 tw-text-sm tw-text-dark-gray"
-          >
-            We're open source!
-            <github-button
-              v-once
-              class="-tw-mb-1 tw-ml-2"
-              href="https://github.com/schej-it/timeful.app"
-              data-show-count="true"
-              aria-label="Star timeful.app on GitHub"
-              >Star</github-button
-            >
-          </div>
+<!--          <div-->
+<!--            class="tw-mb-4 tw-flex tw-select-none tw-items-center tw-rounded-full tw-border tw-border-light-gray-stroke tw-bg-white/70 tw-px-2.5 tw-py-1.5 tw-text-sm tw-text-dark-gray"-->
+<!--          >-->
+<!--            We're open source!-->
+<!--            <github-button-->
+<!--              v-once-->
+<!--              class="-tw-mb-1 tw-ml-2"-->
+<!--              href="https://github.com/schej-it/timeful.app"-->
+<!--              data-show-count="true"-->
+<!--              aria-label="Star timeful.app on GitHub"-->
+<!--              >Star</github-button-->
+<!--            >-->
+<!--          </div>-->
           <div
             id="header"
             class="tw-mb-4 tw-text-center tw-text-2xl tw-font-medium sm:tw-text-4xl lg:tw-text-4xl xl:tw-text-5xl"
@@ -100,7 +99,9 @@
             Log in to continue
           </v-btn>
 
-          <div class="tw-text-sm tw-text-dark-gray">or open an event by code</div>
+          <div class="tw-text-sm tw-text-dark-gray">
+            or open an event by code
+          </div>
 
           <div class="tw-flex tw-w-full tw-gap-2">
             <v-text-field
@@ -328,7 +329,5 @@ export default {
       this.$router.push({ name: "home" })
     },
   },
-
-
 }
 </script>

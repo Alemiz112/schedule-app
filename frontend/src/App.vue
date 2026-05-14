@@ -64,6 +64,9 @@
         >
           + Create new
         </v-btn>
+        <v-btn icon @click="setDarkMode(!darkMode)" class="tw-mr-1">
+          <v-icon>{{ darkMode ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+        </v-btn>
         <div v-if="authUser" class="sm:tw-ml-4">
           <AuthUserMenu />
         </div>
@@ -210,6 +213,83 @@ html {
   outline: red solid;
   border-radius: 3px;
 }
+
+/** Dark mode overrides */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark .tw-bg-white {
+  background-color: #2c2c2c !important;
+}
+
+html.dark .tw-bg-off-white {
+  background-color: #383838 !important;
+}
+
+html.dark .tw-bg-light-gray {
+  background-color: #404040 !important;
+}
+
+html.dark .tw-text-black {
+  color: #e8e8e8 !important;
+}
+
+html.dark .tw-text-dark-gray {
+  color: #c0c0c0 !important;
+}
+
+html.dark .tw-text-very-dark-gray {
+  color: #d8d8d8 !important;
+}
+
+html.dark .tw-border-light-gray-stroke {
+  border-color: #4a4a4a !important;
+}
+
+html.dark .tw-border-light-gray {
+  border-color: #4a4a4a !important;
+}
+
+html.dark .tw-border-gray {
+  border-color: #555555 !important;
+}
+
+html.dark .tw-drop-shadow {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5)) !important;
+}
+
+html.dark .tw-drop-shadow-md {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)) !important;
+}
+
+html.dark .v-btn.v-btn--is-elevated {
+  border-color: #4a4a4a !important;
+}
+
+html.dark .v-btn.v-btn--is-elevated.tw-bg-white {
+  background-color: #383838 !important;
+  border-color: #4a4a4a !important;
+}
+
+html.dark .tw-text-dark-green {
+  color: #4fc87a !important;
+}
+
+html.dark .tw-text-green {
+  color: #4fc87a !important;
+}
+
+/* The Dashboard/Tools panels use sm:tw-bg-[#f3f3f366] — a semi-transparent
+   light gray that blends with the dark Vuetify app bg into a muddy gray.
+   Override it to a proper dark surface. */
+html.dark .sm\:tw-bg-\[#f3f3f366\] {
+  background-color: #2c2c2c !important;
+}
+
+html.dark .animate-boba {
+  display: none !important;
+}
 </style>
 
 <script>
@@ -267,6 +347,7 @@ export default {
       "error",
       "info",
       "newDialogOptions",
+      "darkMode",
     ]),
     isPhone() {
       return isPhone(this.$vuetify)
@@ -301,7 +382,16 @@ export default {
       "setAuthUser",
       "setSignUpFormEnabled",
       "setPricingPageConversion",
+      "setDarkMode",
     ]),
+    _applyDarkMode(dark) {
+      if (dark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+      this.$vuetify.theme.dark = dark
+    },
     ...mapActions([
       "getEvents",
       "openNewDialog",
@@ -368,6 +458,17 @@ export default {
   },
 
   async created() {
+    this._applyDarkMode(this.darkMode)
+
+    // Follow system preference when the user hasn't set one explicitly
+    this._systemDarkModeQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    this._systemDarkModeHandler = (e) => {
+      if (localStorage.getItem('darkMode') === null) {
+        this.setDarkMode(e.matches)
+      }
+    }
+    this._systemDarkModeQuery.addEventListener('change', this._systemDarkModeHandler)
+
     await get("/user/profile")
       .then((authUser) => {
         this.setAuthUser(authUser)
@@ -392,9 +493,13 @@ export default {
 
   beforeDestroy() {
     window.removeEventListener("scroll", this.handleScroll)
+    this._systemDarkModeQuery?.removeEventListener('change', this._systemDarkModeHandler)
   },
 
   watch: {
+    darkMode(val) {
+      this._applyDarkMode(val)
+    },
     $route: {
       immediate: true,
       async handler() {

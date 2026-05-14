@@ -114,6 +114,12 @@ export default new Vuex.Store({
 
     authUser: null,
 
+    darkMode: (() => {
+      const saved = localStorage.getItem('darkMode')
+      if (saved !== null) return saved === 'true'
+      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+    })(),
+
     events: [],
     folders: [],
 
@@ -149,6 +155,11 @@ export default new Vuex.Store({
 
     setAuthUser(state, authUser) {
       state.authUser = authUser
+    },
+
+    setDarkMode(state, dark) {
+      state.darkMode = dark
+      localStorage.setItem('darkMode', dark)
     },
 
     setEvents(state, events) {

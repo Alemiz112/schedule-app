@@ -6,6 +6,7 @@
     :src="src"
     transition="fade-transition"
     :width="width"
+    :style="$store.state.darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}"
   />
 </template>
 

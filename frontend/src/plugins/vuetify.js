@@ -11,6 +11,12 @@ export default new Vuetify({
         primary: tailwind.theme.colors.green,
         error: tailwind.theme.colors.red,
       },
+      dark: {
+        primary: tailwind.theme.colors.green,
+        error: tailwind.theme.colors.red,
+        background: '#1a1a1a',
+        surface: '#2c2c2c',
+      },
     },
   },
   breakpoint: {
