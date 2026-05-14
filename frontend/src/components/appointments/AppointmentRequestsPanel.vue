@@ -115,6 +115,7 @@
 
 <script>
 import { get, post } from "@/utils"
+import { baseUrl } from "@/constants"
 import { mapState } from "vuex"
 import dayjs from "dayjs"
 
@@ -221,7 +222,7 @@ export default {
         .replace(/([-:]|\.000)/g, "")
       const eventId = this.event.shortId ?? this.event._id
       const title = `${this.event.name} with ${req.name}`
-      const details = `Booked via Timeful: https://timeful.app/e/${eventId}`
+      const details = `Booked via Timeful: ${baseUrl}/e/${eventId}`
       const url =
         `https://calendar.google.com/calendar/render?action=TEMPLATE` +
         `&text=${encodeURIComponent(title)}` +

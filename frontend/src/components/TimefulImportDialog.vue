@@ -21,7 +21,7 @@
         <v-text-field
           v-model="url"
           label="Event URL"
-          placeholder="https://timeful.app/e/abc123"
+          :placeholder="`${baseUrl}/e/abc123`"
           outlined
           dense
           :disabled="loading"
@@ -47,6 +47,7 @@
 
 <script>
 import { post } from "@/utils"
+import { baseUrl } from "@/constants"
 
 export default {
   name: "TimefulImportDialog",
@@ -54,6 +55,7 @@ export default {
     value: Boolean,
   },
   data: () => ({
+    baseUrl,
     url: "",
     loading: false,
     error: "",

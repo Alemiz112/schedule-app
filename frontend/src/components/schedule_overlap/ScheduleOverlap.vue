@@ -1037,6 +1037,7 @@ import {
 } from "@/utils"
 import {
   availabilityTypes,
+  baseUrl,
   calendarOptionsDefaults,
   eventTypes,
   guestUserId,
@@ -3538,7 +3539,7 @@ export default {
             title: this.event.name,
             startDate: startDate.getTime(),
             endDate: endDate.getTime(),
-            description: `This event was scheduled with Timeful: https://timeful.app/e/${eventId}`,
+            description: `This event was scheduled with Timeful: ${baseUrl}/e/${eventId}`,
             attendeeEmails,
           })
           this.state = this.defaultState
@@ -3561,13 +3562,13 @@ export default {
         url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
           this.event.name
         )}&dates=${start}/${end}&details=${encodeURIComponent(
-          "\n\nThis event was scheduled with Timeful: https://timeful.app/e/"
+          `\n\nThis event was scheduled with Timeful: ${baseUrl}/e/`
         )}${eventId}&ctz=${this.curTimezone.value}&add=${emailsString}`
       } else {
         url = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
           this.event.name
         )}&body=${encodeURIComponent(
-          "\n\nThis event was scheduled with Timeful: https://timeful.app/e/" +
+          `\n\nThis event was scheduled with Timeful: ${baseUrl}/e/` +
             eventId
         )}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}&location=${encodeURIComponent(
           this.event.location || ""
