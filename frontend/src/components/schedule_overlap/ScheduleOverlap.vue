@@ -1117,6 +1117,7 @@ export default {
 
       availability: new Set(), // The current user's availability
       ifNeeded: new Set(), // The current user's "if needed" availability
+      calendarBusySlots: new Set(), // Slots blocked by calendar events during last autofill
       tempTimes: new Set(), // The specific times that the user has selected for the event (pending save)
       availabilityAnimTimeouts: [], // Timeouts for availability animation
       availabilityAnimEnabled: false, // Whether to animate timeslots changing colors
@@ -2751,10 +2752,67 @@ export default {
       }
       return availability
     },
+    /** Returns a Set of timestamps for timeslots that are blocked by a calendar event */
+    getBusySlotsFromCalendarEvents({ calendarEventsByDay = [], calendarOptions = calendarOptionsDefaults }) {
+      const busySlots = new Set()
+
+      for (let i = 0; i < this.allDays.length; ++i) {
+        const day = this.allDays[i]
+        const date = day.dateObject
+
+        const bufferTimeInMS = calendarOptions.bufferTime.enabled
+          ? calendarOptions.bufferTime.time * 1000 * 60
+          : 0
+
+        const startTimeString = timeNumToTimeString(calendarOptions.workingHours.startTime)
+        const isoDateString = getISODateString(getDateWithTimezone(date), true)
+        const workingHoursStartDate = dayjs
+          .tz(`${isoDateString} ${startTimeString}`, this.curTimezone.value)
+          .toDate()
+        let duration = calendarOptions.workingHours.endTime - calendarOptions.workingHours.startTime
+        if (duration <= 0) duration += 24
+        const workingHoursEndDate = getDateHoursOffset(workingHoursStartDate, duration)
+
+        for (let j = 0; j < this.times.length; ++j) {
+          const startDate = this.getDateFromDayTimeIndex(i, j)
+          if (!startDate) continue
+          const endDate = getDateHoursOffset(startDate, this.timeslotDuration / 60)
+
+          if (calendarOptions.workingHours.enabled) {
+            if (
+              endDate.getTime() <= workingHoursStartDate.getTime() ||
+              startDate.getTime() >= workingHoursEndDate.getTime()
+            ) {
+              continue
+            }
+          }
+
+          const index = calendarEventsByDay[i]?.findIndex((e) => {
+            const startDateBuffered = new Date(e.startDate.getTime() - bufferTimeInMS)
+            const endDateBuffered = new Date(e.endDate.getTime() + bufferTimeInMS)
+            const notIntersect =
+              dateCompare(endDate, startDateBuffered) <= 0 ||
+              dateCompare(startDate, endDateBuffered) >= 0
+            return !notIntersect && !e.free
+          })
+          if (index !== undefined && index !== -1) {
+            busySlots.add(startDate.getTime())
+          }
+        }
+      }
+      return busySlots
+    },
     /** Constructs the availability array using calendarEvents array */
     setAvailabilityAutomatically() {
       // This is not a computed property because we should be able to change it manually from what it automatically fills in
       this.availability = new Set()
+      this.calendarBusySlots = this.getBusySlotsFromCalendarEvents({
+        calendarEventsByDay: this.calendarEventsByDay,
+        calendarOptions: {
+          bufferTime: this.bufferTime,
+          workingHours: this.workingHours,
+        },
+      })
       const tmpAvailability = this.getAvailabilityFromCalendarEvents({
         calendarEventsByDay: this.calendarEventsByDay,
         calendarOptions: {
@@ -3085,6 +3143,8 @@ export default {
               s.backgroundColor = "#00994C77"
             } else if (this.ifNeeded.has(date.getTime())) {
               c += "tw-bg-yellow "
+            } else if (this.calendarBusySlots.has(date.getTime())) {
+              s.backgroundColor = "#E5232333"
             }
           }
         }
@@ -3423,6 +3483,7 @@ export default {
       this.availabilityType = availabilityTypes.AVAILABLE
       this.availability = new Set()
       this.ifNeeded = new Set()
+      this.calendarBusySlots = new Set()
 
       if (this.authUser && !this.addingAvailabilityAsGuest) {
         this.resetCurUserAvailability()
@@ -3699,11 +3760,13 @@ export default {
                 if (this.availabilityType === availabilityTypes.AVAILABLE) {
                   this.availability.add(date.getTime())
                   this.ifNeeded.delete(date.getTime())
+                  this.calendarBusySlots.delete(date.getTime())
                 } else if (
                   this.availabilityType === availabilityTypes.IF_NEEDED
                 ) {
                   this.ifNeeded.add(date.getTime())
                   this.availability.delete(date.getTime())
+                  this.calendarBusySlots.delete(date.getTime())
                 }
               }
             } else if (this.dragType === this.DRAG_TYPES.REMOVE) {
