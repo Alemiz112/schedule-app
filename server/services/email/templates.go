@@ -95,7 +95,7 @@ var Templates = struct {
 	},
 	AppointmentRequested: Template{
 		listmonkIDEnv: "LISTMONK_APPOINTMENT_REQUESTED_TEMPLATE_ID",
-		Subject:       "New appointment request for {{.eventName}}",
+		Subject:       "{{.requesterName}} booked a new appointment for {{.eventName}}",
 		Body:          "{{.requesterName}} has requested an appointment for \"{{.eventName}}\" on {{.date}} from {{.startTime}} to {{.endTime}}.{{if .notes}}\n\nNotes: {{.notes}}{{end}}\n\nManage requests: {{.eventUrl}}",
 	},
 	AppointmentApproved: Template{
