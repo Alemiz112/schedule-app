@@ -29,32 +29,7 @@
         <v-spacer />
 
         <v-btn
-          v-if="$route.name === 'event'"
-          id="top-right-create-btn"
-          text
-          @click="() => _createNew(true)"
-        >
-          Create an event
-        </v-btn>
-        <v-btn
-          v-if="showFeedbackBtn"
-          id="feedback-btn"
-          text
-          href="https://forms.gle/A96i4TTWeKgH3P1W6"
-          target="_blank"
-        >
-          Give feedback
-        </v-btn>
-        <!-- <v-btn
-          v-if="!isPhone"
-          text
-          href="https://www.paypal.com/donate/?hosted_button_id=KWCH6LGJCP6E6"
-          target="_blank"
-        >
-          Donate
-        </v-btn> -->
-        <v-btn
-          v-if="$route.name === 'home' && !isPhone"
+          v-if="($route.name === 'home' || $route.name === 'event') && !isPhone"
           color="primary"
           class="tw-mx-2 tw-rounded-md"
           :style="{
