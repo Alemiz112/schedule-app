@@ -358,6 +358,7 @@ export default {
       "setSignUpFormEnabled",
       "setPricingPageConversion",
       "setDarkMode",
+      "setAllowRegistration",
     ]),
     _applyDarkMode(dark) {
       if (dark) {
@@ -443,6 +444,10 @@ export default {
       }
     }
     this._systemDarkModeQuery.addEventListener('change', this._systemDarkModeHandler)
+
+    get("/status").then(({ allowRegistration }) => {
+      this.setAllowRegistration(allowRegistration)
+    }).catch(() => {})
 
     await get("/user/profile")
       .then((authUser) => {

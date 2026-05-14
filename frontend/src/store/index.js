@@ -114,6 +114,8 @@ export default new Vuex.Store({
 
     authUser: null,
 
+    allowRegistration: true,
+
     darkMode: (() => {
       const saved = localStorage.getItem('darkMode')
       if (saved !== null) return saved === 'true'
@@ -160,6 +162,10 @@ export default new Vuex.Store({
     setDarkMode(state, dark) {
       state.darkMode = dark
       localStorage.setItem('darkMode', dark)
+    },
+
+    setAllowRegistration(state, allow) {
+      state.allowRegistration = allow
     },
 
     setEvents(state, events) {

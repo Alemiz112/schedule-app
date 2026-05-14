@@ -1,112 +1,69 @@
 <template>
-  <div class="tw-bg-light-gray">
+  <div>
+    <!-- Invite-only banner -->
     <div
-      class="tw-relative tw-m-auto tw-mb-12 tw-flex tw-max-w-6xl tw-flex-col tw-px-4 sm:tw-mb-20"
+      v-if="!allowRegistration"
+      class="tw-flex tw-items-center tw-justify-center tw-gap-2 tw-bg-very-dark-gray tw-px-4 tw-py-2.5 tw-text-sm tw-text-white"
     >
-      <!-- Header -->
-      <div class="tw-mb-16 sm:tw-mb-28">
-        <div class="tw-flex tw-items-center tw-pt-5">
-          <Logo type="timeful" />
+      <v-icon small color="white">mdi-lock-outline</v-icon>
+      <span>This instance is <strong>invite only</strong> — registration is currently closed.</span>
+    </div>
 
-          <v-spacer />
-
-          <LandingPageHeader>
-            <!--            <v-btn text @click="openHowItWorksDialog">How it works</v-btn>-->
-            <!--            <v-btn text href="/blog">Blog</v-btn>-->
-            <div v-if="authUser" class="tw-ml-2">
-              <AuthUserMenu />
-            </div>
-            <v-btn v-else text :to="{ name: 'sign-in' }">Sign in</v-btn>
-          </LandingPageHeader>
-        </div>
+    <!-- Navbar -->
+    <div class="tw-bg-white tw-px-4">
+      <div class="tw-m-auto tw-flex tw-max-w-6xl tw-items-center tw-py-5">
+        <Logo type="timeful" />
+        <v-spacer />
+        <LandingPageHeader>
+          <div v-if="authUser" class="tw-ml-2">
+            <AuthUserMenu />
+          </div>
+          <v-btn v-else text :to="{ name: 'sign-in' }">Sign in</v-btn>
+        </LandingPageHeader>
       </div>
+    </div>
 
-      <div class="tw-flex tw-flex-col tw-items-center">
-        <div
-          class="tw-mb-6 tw-flex tw-max-w-[26rem] tw-flex-col tw-items-center sm:tw-w-[35rem] sm:tw-max-w-none"
+    <!-- Hero -->
+    <div class="hero-section tw-bg-white tw-px-4 tw-py-24 sm:tw-py-36">
+      <div class="tw-m-auto tw-max-w-2xl tw-text-center">
+        <h1
+          class="tw-mb-5 tw-text-4xl tw-font-semibold tw-tracking-tight tw-text-black sm:tw-text-5xl xl:tw-text-6xl"
         >
-<!--          <div-->
-<!--            class="tw-mb-4 tw-flex tw-select-none tw-items-center tw-rounded-full tw-border tw-border-light-gray-stroke tw-bg-white/70 tw-px-2.5 tw-py-1.5 tw-text-sm tw-text-dark-gray"-->
-<!--          >-->
-<!--            We're open source!-->
-<!--            <github-button-->
-<!--              v-once-->
-<!--              class="-tw-mb-1 tw-ml-2"-->
-<!--              href="https://github.com/schej-it/timeful.app"-->
-<!--              data-show-count="true"-->
-<!--              aria-label="Star timeful.app on GitHub"-->
-<!--              >Star</github-button-->
-<!--            >-->
-<!--          </div>-->
-          <div
-            id="header"
-            class="tw-mb-4 tw-text-center tw-text-2xl tw-font-medium sm:tw-text-4xl lg:tw-text-4xl xl:tw-text-5xl"
-          >
-            <h1>Find a time to meet</h1>
-          </div>
+          Find a time that works for everyone
+        </h1>
+        <p class="tw-mb-10 tw-text-lg tw-text-dark-gray">
+          Stop the back-and-forth. Timeful shows you exactly when your whole
+          group is free.
+        </p>
 
-          <div
-            class="lg:tw-text-md tw-text-left tw-text-center tw-text-sm tw-text-very-dark-gray sm:tw-text-lg md:tw-text-lg xl:tw-text-lg"
-          >
-            Coordinate group meetings without the back and forth.
-            <br class="tw-hidden sm:tw-block" />
-            Integrates with your
-            <v-tooltip
-              top
-              content-class="tw-bg-very-dark-gray tw-shadow-lg tw-opacity-100"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="tw-cursor-pointer tw-border-b tw-border-dashed tw-border-dark-gray"
-                  v-bind="attrs"
-                  v-on="on"
-                  >calendar</span
-                >
-              </template>
-              <span
-                >Timeful allows you to autofill your availability from Google
-                Calendar,<br class="tw-hidden sm:tw-block" />
-                Outlook, Apple Calendar, or an ICS feed URL.</span
-              > </v-tooltip
-            >.
-          </div>
-        </div>
-
-        <!-- Logged-in CTA -->
-        <div v-if="authUser" class="tw-mb-12">
+        <div v-if="authUser">
           <v-btn
-            class="tw-block tw-self-center tw-rounded-lg tw-bg-green tw-px-10 tw-text-base sm:tw-px-10 lg:tw-px-12"
-            dark
-            @click="openDashboard"
             large
-            :x-large="$vuetify.breakpoint.mdAndUp"
+            color="primary"
+            dark
+            class="tw-rounded-lg tw-px-10"
+            @click="openDashboard"
           >
             Open dashboard
           </v-btn>
         </div>
-
-        <!-- Not-logged-in CTA -->
         <div
           v-else
-          class="tw-mb-12 tw-flex tw-w-full tw-max-w-xs tw-flex-col tw-items-center tw-gap-3 sm:tw-max-w-sm"
+          class="tw-mx-auto tw-flex tw-max-w-sm tw-flex-col tw-gap-3"
         >
           <v-btn
-            class="tw-w-full tw-rounded-lg tw-bg-green tw-text-base"
-            dark
             large
+            color="primary"
+            dark
+            class="tw-w-full tw-rounded-lg"
             :to="{ name: 'sign-in' }"
           >
-            Log in to continue
+            Get started — it's free
           </v-btn>
-
-          <div class="tw-text-sm tw-text-dark-gray">
-            or open an event by code
-          </div>
-
-          <div class="tw-flex tw-w-full tw-gap-2">
+          <div class="tw-flex tw-gap-2">
             <v-text-field
               v-model="eventCode"
-              placeholder="Event code..."
+              placeholder="Have an event code?"
               outlined
               dense
               hide-details
@@ -124,52 +81,136 @@
             </v-btn>
           </div>
         </div>
-        <div class="tw-relative tw-w-full">
-          <!-- Green background -->
+
+        <!-- Calendar logos -->
+        <div
+          class="tw-mt-10 tw-flex tw-flex-wrap tw-items-center tw-justify-center tw-gap-3"
+        >
+          <span class="tw-text-sm tw-text-dark-gray">Works with</span>
           <div
-            class="tw-absolute -tw-bottom-12 tw-left-1/2 tw-h-[85%] tw-w-screen -tw-translate-x-1/2 tw-bg-green sm:-tw-bottom-20"
-          ></div>
+            v-for="cal in calendars"
+            :key="cal.label"
+            class="tw-flex tw-items-center tw-gap-1.5 tw-rounded-full tw-border tw-border-light-gray-stroke tw-bg-off-white tw-px-3 tw-py-1"
+          >
+            <img
+              :src="cal.src"
+              :alt="cal.label"
+              class="tw-h-4 tw-w-4 tw-object-contain"
+              :style="cal.invert && darkMode ? { filter: 'invert(1)' } : {}"
+            />
+            <span class="tw-text-xs tw-text-very-dark-gray">{{ cal.label }}</span>
+          </div>
+          <div
+            class="tw-flex tw-items-center tw-gap-1.5 tw-rounded-full tw-border tw-border-light-gray-stroke tw-bg-off-white tw-px-3 tw-py-1"
+          >
+            <v-icon small color="#6B6B6B">mdi-calendar-text</v-icon>
+            <span class="tw-text-xs tw-text-very-dark-gray">ICS feeds</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Add the dialog component -->
-    <HowItWorksDialog
-      v-if="showHowItWorksDialog"
-      v-model="showHowItWorksDialog"
-    />
+    <!-- How it works -->
+    <div class="tw-bg-green tw-px-4 tw-py-16">
+      <div class="tw-m-auto tw-max-w-4xl">
+        <h2
+          class="tw-mb-12 tw-text-center tw-text-2xl tw-font-semibold tw-text-white sm:tw-text-3xl"
+        >
+          How it works
+        </h2>
+        <div class="tw-grid tw-grid-cols-1 tw-gap-10 sm:tw-grid-cols-3">
+          <div
+            v-for="(step, i) in steps"
+            :key="i"
+            class="tw-flex tw-flex-col tw-items-center tw-text-center"
+          >
+            <div
+              class="tw-mb-4 tw-flex tw-h-11 tw-w-11 tw-items-center tw-justify-center tw-rounded-full tw-bg-white"
+            >
+              <v-icon color="green">{{ step.icon }}</v-icon>
+            </div>
+            <p class="tw-mb-1 tw-font-semibold tw-text-white">{{ step.title }}</p>
+            <p class="tw-text-sm tw-text-pale-green">{{ step.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div class="tw-bg-off-white tw-px-4 tw-py-16">
+      <div class="tw-m-auto tw-max-w-4xl">
+        <h2
+          class="tw-mb-10 tw-text-center tw-text-2xl tw-font-semibold tw-text-black sm:tw-text-3xl"
+        >
+          Everything your team needs
+        </h2>
+        <div class="tw-grid tw-grid-cols-1 tw-gap-5 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
+          <div
+            v-for="feature in features"
+            :key="feature.title"
+            class="tw-rounded-xl tw-bg-white tw-p-6"
+          >
+            <div
+              class="tw-mb-3 tw-flex tw-h-10 tw-w-10 tw-items-center tw-justify-center tw-rounded-lg tw-bg-ligher-green"
+            >
+              <v-icon color="green">{{ feature.icon }}</v-icon>
+            </div>
+            <h3 class="tw-mb-1.5 tw-font-semibold tw-text-black">{{ feature.title }}</h3>
+            <p class="tw-text-sm tw-text-dark-gray">{{ feature.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom CTA -->
+    <div class="tw-bg-white tw-px-4 tw-py-20">
+      <div class="tw-m-auto tw-max-w-lg tw-text-center">
+        <h2
+          class="tw-mb-3 tw-text-2xl tw-font-semibold tw-text-black sm:tw-text-3xl"
+        >
+          Ready to get started?
+        </h2>
+        <p class="tw-mb-8 tw-text-dark-gray">Free to use. No credit card required.</p>
+        <v-btn
+          v-if="authUser"
+          large
+          color="primary"
+          dark
+          class="tw-rounded-lg tw-px-10"
+          @click="openDashboard"
+        >
+          Go to dashboard
+        </v-btn>
+        <v-btn
+          v-else
+          large
+          color="primary"
+          dark
+          class="tw-rounded-lg tw-px-10"
+          :to="{ name: 'sign-in' }"
+        >
+          Get started — it's free
+        </v-btn>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-@media screen and (min-width: 375px) and (max-width: 640px) {
-  #header {
-    font-size: 1.875rem !important; /* 30px */
-    line-height: 2.25rem !important; /* 36px */
-  }
-}
-</style>
-<style>
-.rdt-h {
-  @apply tw-rounded tw-bg-light-green/20 tw-px-px tw-text-black;
+.hero-section {
+  background-image: radial-gradient(
+    ellipse 100% 80% at 50% -5%,
+    rgba(0, 153, 76, 0.07) 0%,
+    transparent 70%
+  );
 }
 </style>
 
 <script>
-import LandingPageCalendar from "@/components/landing/LandingPageCalendar.vue"
-import { isPhone } from "@/utils"
-import Header from "@/components/Header.vue"
-import NumberBullet from "@/components/NumberBullet.vue"
-import NewEvent from "@/components/NewEvent.vue"
 import LandingPageHeader from "@/components/landing/LandingPageHeader.vue"
 import Logo from "@/components/Logo.vue"
-import GithubButton from "vue-github-button"
-import HowItWorksDialog from "@/components/HowItWorksDialog.vue"
-import { vueVimeoPlayer } from "vue-vimeo-player"
-import Footer from "@/components/Footer.vue"
-import PronunciationMenu from "@/components/PronunciationMenu.vue"
-import { mapState } from "vuex"
 import AuthUserMenu from "@/components/AuthUserMenu.vue"
+import { mapState } from "vuex"
 
 export default {
   name: "Landing",
@@ -179,136 +220,71 @@ export default {
   },
 
   components: {
-    LandingPageCalendar,
-    Header,
-    NumberBullet,
-    NewEvent,
     LandingPageHeader,
-    GithubButton,
     Logo,
-    HowItWorksDialog,
-    vueVimeoPlayer,
-    Footer,
-    PronunciationMenu,
     AuthUserMenu,
   },
 
   data: () => ({
     eventCode: "",
-    githubSnackbar: true,
-    howItWorksSteps: [
-      "Create a Timeful event",
-      "Share the Timeful link with your group for them to fill out",
-      "See where everybody's availability overlaps!",
+    calendars: [
+      { label: "Google Calendar", src: require("@/assets/gcal_logo.png"), invert: false },
+      { label: "Outlook", src: require("@/assets/outlook_logo.svg"), invert: false },
+      { label: "Apple Calendar", src: require("@/assets/apple_logo.svg"), invert: true },
     ],
-    faqs: [
+    steps: [
       {
-        question: "Does Timeful support timezones?",
-        answer:
-          "Yes! Timeful automatically converts all times to the viewer's local timezone. There's also a timezone selector at the bottom of every meeting poll if you would like to manually change it.",
+        icon: "mdi-calendar-plus",
+        title: "Create an event",
+        desc: "Set your date range and time preferences in seconds.",
       },
       {
-        question: "How many people can respond to an event?",
-        answer:
-          "Unlimited! We've tested events with over 500+ responses and it works great.",
+        icon: "mdi-share-variant",
+        title: "Share the link",
+        desc: "Invite everyone with a single link — no sign-up required.",
       },
       {
-        question: "What calendars does Timeful integrate with?",
-        answer:
-          "Timeful allows you to autofill your availability from your Google Calendar, Outlook, Apple Calendar, or an ICS feed URL. We are working on adding more calendar types soon!",
-      },
-      {
-        question: "Is calendar access required in order to use Timeful?",
-        answer:
-          "Nope! You can manually input your availability, but we highly recommend allowing calendar access in order to view your calendar events while doing so.",
-      },
-      {
-        question: "Will other people be able to see my calendar events?",
-        answer:
-          "Nope! All other users will be able to see is the availability that you enter for an event.",
-      },
-      {
-        question: "How do I edit my availability?",
-        answer:
-          'If you are signed in, simply click the "Edit availability" button. If you entered your availability as a guest, hover over your name and click the pencil icon next to it.',
-      },
-      {
-        question: "How is Timeful different from Lettucemeet or When2meet?",
-        points: [
-          "Much better UI (web and mobile)",
-          "Seamless and working calendar integration",
-          "A slew of other features that we don't have space to list here",
-        ],
-      },
-      {
-        question: `I want it so that only I can see people's responses.`,
-        answer: `Just check "Only show responses to event creator" under Advanced Options when creating your event! Other respondees will not be able to see each other's names or availability.`,
-        authRequired: true,
-      },
-      {
-        question: `Can I receive emails when someone fills out my event?`,
-        answer: `Absolutely! Check "Email me each time someone joins my event" when creating an event. <br><br>To receive email notifications after a specific number (X) of responses are added, check "Email me after X responses" in Advanced Options.`,
-        authRequired: true,
-      },
-      {
-        question: `How do I send reminders to people to fill out an event?`,
-        answer: `Open the "Email Reminders" section when creating an event and input everybody's email address. Reminder emails will be sent the day of event creation, one day after, and three days after. <br><br>You will also receive an email once everybody has filled out the Timeful.`,
-        authRequired: true,
+        icon: "mdi-check-circle-outline",
+        title: "Find the perfect time",
+        desc: "See exactly when your whole group is available.",
       },
     ],
-    redditComments: [
+    features: [
       {
-        text: "Genuinely the <span class='rdt-h'>best lightweight version of this kind of website</span> that I've come across so far, exceptional.",
-        author: "u/voipClock",
-        link: "https://www.reddit.com/r/opensource/comments/1klu471/comment/mt4l2ab",
-        picture:
-          "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png",
+        icon: "mdi-calendar-sync",
+        title: "Calendar sync",
+        desc: "Autofill your availability from Google, Outlook, Apple Calendar, or any ICS feed.",
       },
       {
-        text: "It's almost <span class='rdt-h'>comically easy</span> to schedule meetings with Timeful.",
-        author: "u/stuffingmybrain",
-        link: "https://www.reddit.com/r/schej/comments/1drs26z/comment/lb8rvty",
-        picture:
-          "https://styles.redditmedia.com/t5_qqojf/styles/profileIcon_snooa54a8eae-bc7f-406f-9778-b3b9dfb818e5-headshot.png?width=64&height=64&frame=1&auto=webp&crop=&s=a0a91575ff7cfc3b6698cac69da6c012c7deb8d6",
+        icon: "mdi-account-group",
+        title: "No account needed",
+        desc: "Anyone can respond as a guest. Only the organizer needs to sign up.",
       },
       {
-        text: "Timeful is everything I've ever wanted and more. On top of that, <span class='rdt-h'>community support is the best I've seen</span> of any app or software, ever.",
-        author: "u/DMODD",
-        link: "https://www.reddit.com/r/schej/comments/1drs26z/comment/lb8udud",
-        picture:
-          "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_6.png",
+        icon: "mdi-shield-check",
+        title: "Privacy first",
+        desc: "We never store your calendar data — it's only fetched to prefill your availability.",
       },
       {
-        text: "With Timeful, <span class='rdt-h'>I'm very quickly able to figure out the optimal time</span> to schedule online extra help sessions before an exam.",
-        author: "u/crackwurst",
-        link: "https://www.reddit.com/r/schej/comments/1drs26z/comment/lb9dmbe",
-        picture:
-          "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png",
+        icon: "mdi-cellphone",
+        title: "Mobile friendly",
+        desc: "Works great on any device — phone, tablet, or desktop.",
       },
       {
-        text: "Exactly what I was looking for! Clear and clean interface, also on mobile (<span class='rdt-h'>Doodle is a disaster</span>).",
-        author: "u/Willem1976",
-        link: "https://www.reddit.com/r/opensource/comments/1dlol7r/comment/lkn7sle",
-        picture:
-          "https://styles.redditmedia.com/t5_c0qtc/styles/profileIcon_snooa9d429ce-e3d9-458a-be9e-1b6dd157a209-headshot.png?width=64&height=64&frame=1&auto=webp&crop=&s=7eba44ea268928b969bcf73ee8667357412132ca",
+        icon: "mdi-earth",
+        title: "Timezone aware",
+        desc: "All times are automatically shown in each person's local timezone.",
       },
-      // {
-      //   text: "Thank you very much! My workplace cannot seem to pick between when2meet and Doodle and I feel like this brings the best of each into one.\n\nWell done <3",
-      //   author: "u/jadiepants",
-      //   link: "https://www.reddit.com/r/opensource/comments/1dlol7r/comment/m6bf3li",
-      //   picture:
-      //     "https://styles.redditmedia.com/t5_d7myp/styles/profileIcon_snoof50f1128-f439-433b-a6b2-8e987630e506-headshot.png?width=64&height=64&frame=1&auto=webp&crop=&s=94077bf80603c2855747f1bfc0b9dd1539fae75c",
-      // },
+      {
+        icon: "mdi-bell-outline",
+        title: "Email reminders",
+        desc: "Send reminders and get notified once everyone has responded.",
+      },
     ],
-    showHowItWorksDialog: false,
-    isVideoPlaying: false,
   }),
 
   computed: {
-    ...mapState(["authUser"]),
-    isPhone() {
-      return isPhone(this.$vuetify)
-    },
+    ...mapState(["authUser", "darkMode", "allowRegistration"]),
   },
 
   methods: {
@@ -316,14 +292,6 @@ export default {
       const code = this.eventCode.trim()
       if (!code) return
       this.$router.push({ name: "event", params: { eventId: code } })
-    },
-    openHowItWorksDialog() {
-      this.showHowItWorksDialog = true
-    },
-    onPlay() {
-      setTimeout(() => {
-        this.isVideoPlaying = true
-      }, 1000)
     },
     openDashboard() {
       this.$router.push({ name: "home" })
